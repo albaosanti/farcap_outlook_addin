@@ -26,7 +26,7 @@ namespace DragDrapWatcher_AddIn
         private int CountUniqueSenders()
         {
             var cnt = 0;
-            var rule = Globals.ThisAddIn.fnFindRuleByName(rule_name);
+            var rule = Globals.ThisAddIn.OutlookRules.fnFindRuleByName(rule_name);
             if (rule != null)
                 cnt = rule.Conditions.From.Recipients.Count;
 
@@ -217,13 +217,13 @@ namespace DragDrapWatcher_AddIn
                     {
                         try
                         {
-                            var rule = Globals.ThisAddIn.fnFindRuleByName(rule_name);
+                            var rule = Globals.ThisAddIn.OutlookRules.fnFindRuleByName(rule_name);
                             if (rule != null)
                             {
-                                Globals.ThisAddIn.GlobalRules.Remove(rule_name);
+                                Globals.ThisAddIn.OutlookRules.Remove(rule_name);
                                 rule = null;
                             }
-                            rule = Globals.ThisAddIn.GlobalRules.Create(rule_name, Outlook.OlRuleType.olRuleReceive);
+                            rule = Globals.ThisAddIn.OutlookRules.Create(rule_name, Outlook.OlRuleType.olRuleReceive);
                             rule.Actions.MoveToFolder.Folder = (parent_folder);
                             rule.Actions.MoveToFolder.Enabled = true;
 
@@ -236,7 +236,7 @@ namespace DragDrapWatcher_AddIn
                             }
 
                             //SAVE                            
-                            Globals.ThisAddIn.GlobalRules.Save(true);
+                            Globals.ThisAddIn.OutlookRules.Save(true);
                             
                             lblFoundSenders.Text = "Please re-scan folder.";
                             lblRuleSenders.Text = string.Format("{0} unique sender/s.", scanned_senders.Count);

@@ -134,14 +134,14 @@ namespace DragDrapWatcher_AddIn
                     {
                         Outlook.Folder tar_folder = fnGetFolder(folder_path);
                         tar_rulename = Properties.Settings.Default.RuleName_Prefix + tar_folder.Name;
-                        Outlook.Rule tar_rule  = Globals.ThisAddIn.fnFindRuleByName(Properties.Settings.Default.RuleName_Prefix + tar_folder.Name);
+                        Outlook.Rule tar_rule  = Globals.ThisAddIn.OutlookRules.fnFindRuleByName(Properties.Settings.Default.RuleName_Prefix + tar_folder.Name);
                         Outlook.Rule src_rule = null;
                         
                         //CREATE RULE 
                         if (tar_rule == null)
                         {
                             //CREATE NEW RULE
-                            tar_rule = Globals.ThisAddIn.GlobalRules.Create(tar_rulename, Outlook.OlRuleType.olRuleReceive);
+                            tar_rule = Globals.ThisAddIn.OutlookRules.Create(tar_rulename, Outlook.OlRuleType.olRuleReceive);
                             //SET TARGET FOLDER
                             tar_rule.Actions.MoveToFolder.Folder = (tar_folder);
                             tar_rule.Actions.MoveToFolder.Enabled = true;
@@ -159,7 +159,7 @@ namespace DragDrapWatcher_AddIn
                                         ValidFolders[cmbTarget.SelectedIndex][1].ToLower())
                             {
                                 //DELETE THE EMAIL FROM THE PREVIOUS RULE
-                                src_rule = Globals.ThisAddIn.fnFindRuleByName(src_rulename);
+                                src_rule = Globals.ThisAddIn.OutlookRules.fnFindRuleByName(src_rulename);
                                 if (src_rule != null)
                                 {
                                     foreach (Outlook.Recipient _recipient in src_rule.Conditions.From.Recipients)
@@ -177,7 +177,7 @@ namespace DragDrapWatcher_AddIn
                                         }
                                     }
                                     if (src_rule.Conditions.From.Recipients.Count == 0)
-                                        Globals.ThisAddIn.GlobalRules.Remove(src_rulename);
+                                        Globals.ThisAddIn.OutlookRules.Remove(src_rulename);
                                 }
 
 
@@ -205,9 +205,9 @@ namespace DragDrapWatcher_AddIn
                                 }
                             }
                         }
-                        if (has_changed && Globals.ThisAddIn.GlobalRules != null)
+                        if (has_changed && Globals.ThisAddIn.OutlookRules != null)
                         {
-                            Globals.ThisAddIn.GlobalRules.Save(true);
+                            Globals.ThisAddIn.OutlookRules.Save(true);
                         }
 
                         this.DialogResult = System.Windows.Forms.DialogResult.OK;

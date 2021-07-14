@@ -19,7 +19,7 @@ namespace DragDrapWatcher_AddIn
   {
     #region Global Variables
     public string CAT_RULE_PREFIX = string.IsNullOrWhiteSpace(Properties.Settings.Default.CategoryRulePrefix) ? "#fcap_cat_" : Properties.Settings.Default.CategoryRulePrefix;
-    public Outlook.Rules GlobalRules = null;
+    public GlobalRules OutlookRules = null;
     public clsSendNotif Error_Sender = null;
     #endregion
 
@@ -30,10 +30,12 @@ namespace DragDrapWatcher_AddIn
 
       try
       {
+
         Error_Sender = new clsSendNotif();
         Outlook.Application application = this.Application;
         //Get the MAPI namespace
         outNS = application.GetNamespace("MAPI");
+        OutlookRules = new GlobalRules(application, this);
         //Get UserName
         string profileName = outNS.CurrentUser.Name;
 
@@ -75,102 +77,11 @@ namespace DragDrapWatcher_AddIn
     }
 
     #region Rules Manipulation
-    public Outlook.Rule fnFindRuleByName(string rule_name)
-    {
-      if (this.GlobalRules == null)
-        this.GlobalRules = Globals.ThisAddIn.Application.Session.DefaultStore.GetRules();
 
-      Outlook.Rule rule = null;
-      if (this.GlobalRules != null && !string.IsNullOrEmpty(rule_name))
-      {
-        foreach (Outlook.Rule r in this.GlobalRules)
-        {
-          if (r.Name.ToLower() == rule_name.ToLower())
-          {
-            rule = r;
-            break;
-          }
-        }
-      }
-      return rule;
-    }
 
-    public bool fnAddEmailToRule(string rule_name, string email_address, Outlook.MAPIFolder target_folder)
-    {
-      Outlook.Rule rule = fnFindRuleByName(rule_name);
-      bool ok_added = false;
-      bool email_exist = false;
-      string recipient_address;
 
-      //CREATE NEW RULE
-      if (rule == null)
-      {
-        rule = this.GlobalRules.Create(rule_name, Outlook.OlRuleType.olRuleReceive);
-        rule.Actions.MoveToFolder.Folder = (target_folder);
-        rule.Actions.MoveToFolder.Enabled = true;
-        ok_added = true;
-      }
-      //CHECK IF THE EMAIL ADDRESS IS ALREADY ADDED
-      if (rule.Conditions.From.Recipients.Count > 0)
-      {
-        foreach (Outlook.Recipient _recipient in rule.Conditions.From.Recipients)
-        {
-          recipient_address = fnGetSenderAddress(_recipient);
-          if (!string.IsNullOrEmpty(recipient_address))
-          {
-            if (recipient_address.ToLower() == email_address.ToLower())
-            {
-              email_exist = true;
-              break;
-            }
-          }
-        }
-      }
 
-      //ADD THE NON EXISTING EMAILADDRESS
-      if (!email_exist)
-      {
-        rule.Conditions.From.Recipients.Add(email_address);
-        rule.Conditions.From.Recipients.ResolveAll();
-        rule.Conditions.From.Enabled = true;
-        ok_added = true;
-      }
-      return ok_added;
-    }
 
-    public bool fnRemoveEmailFromRule(string rule_name, string email_address)
-    {
-      string recipient_address;
-      bool ok_remove = false;
-      Outlook.Rule src_rule = this.fnFindRuleByName(rule_name);
-
-      if (src_rule != null)
-      {
-        foreach (Outlook.Recipient _recipient in src_rule.Conditions.From.Recipients)
-        {
-          recipient_address = fnGetSenderAddress(_recipient);
-          if (!string.IsNullOrEmpty(recipient_address))
-          {
-            if (recipient_address.ToLower() == email_address.ToLower())
-            {
-              _recipient.Delete();
-              _recipient.Resolve();
-              ok_remove = true;
-              break;
-            }
-          }
-        }
-      }
-      if (src_rule != null)
-      {
-        if (src_rule.Conditions.From.Recipients.Count == 0)
-        {
-          this.GlobalRules.Remove(rule_name);
-          ok_remove = true;
-        }
-      }
-      return ok_remove;
-    }
 
     public string fnGetSenderAddress(object address)
     {
@@ -210,7 +121,7 @@ namespace DragDrapWatcher_AddIn
     #region Rule Category Assigning
     public bool fnAddEmailToRule_Category(string rule_name, string email_address, string _category)
     {
-      Outlook.Rule rule = fnFindRuleByName(rule_name);
+      Outlook.Rule rule = OutlookRules.fnFindRuleByName(rule_name);
       bool ok_added = false;
       bool email_exist = false;
 
@@ -220,7 +131,7 @@ namespace DragDrapWatcher_AddIn
       //CREATE NEW RULE
       if (rule == null)
       {
-        rule = this.GlobalRules.Create(rule_name, Outlook.OlRuleType.olRuleReceive);
+        rule = this.OutlookRules.Create(rule_name, Outlook.OlRuleType.olRuleReceive);
         rule.Actions.AssignToCategory.Categories = categories;
         rule.Actions.AssignToCategory.Enabled = true;
         ok_added = true;
@@ -596,7 +507,7 @@ namespace DragDrapWatcher_AddIn
                     src_folder.Name.ToLower().StartsWith(rule_prefix.ToLower()))
             {
               src_rule_name = rule_prefix + src_folder.Name;
-              ok_removed = Globals.ThisAddIn.fnRemoveEmailFromRule(src_rule_name, oMsg.SenderEmailAddress);
+              ok_removed = Globals.ThisAddIn.OutlookRules.fnRemoveEmailFromRule(src_rule_name, oMsg.SenderEmailAddress);
             }
 
             //DESTINATION FOLDER
@@ -605,12 +516,12 @@ namespace DragDrapWatcher_AddIn
             {
 
               tar_rule_name = rule_prefix + TargetFolder.Name;
-              ok_added = Globals.ThisAddIn.fnAddEmailToRule(tar_rule_name, oMsg.SenderEmailAddress, TargetFolder);
+              ok_added = Globals.ThisAddIn.OutlookRules.fnAddEmailToRule(tar_rule_name, oMsg.SenderEmailAddress, TargetFolder);
             }
 
             //Save rules
-            if (Globals.ThisAddIn.GlobalRules != null && (ok_added || ok_removed))
-              Globals.ThisAddIn.GlobalRules.Save(true);
+            if (Globals.ThisAddIn.OutlookRules != null && (ok_added || ok_removed))
+              Globals.ThisAddIn.OutlookRules.Save(true);
           }
         }
       }
@@ -656,6 +567,136 @@ namespace DragDrapWatcher_AddIn
     #endregion
   }
   #endregion
+
+  public class GlobalRules
+  {
+    private readonly Outlook.Application _application;
+    private readonly ThisAddIn _thisAddIn;
+    public Outlook.Rules Rules = null;
+
+    public GlobalRules(Outlook.Application application, ThisAddIn thisAddIn)
+    {
+      _application = application;
+      _thisAddIn = thisAddIn;
+      Rules = _application.Session.DefaultStore.GetRules();
+    }
+
+    public Outlook.Rule fnFindRuleByName(string rule_name)
+    {
+      Outlook.Rule rule = null;
+      if (this.Rules != null && !string.IsNullOrEmpty(rule_name))
+      {
+        foreach (Outlook.Rule r in this.Rules)
+        {
+          if (r.Name.ToLower() == rule_name.ToLower())
+          {
+            rule = r;
+            break;
+          }
+        }
+      }
+      return rule;
+    }
+
+    public bool fnAddEmailToRule(string rule_name, string email_address, Outlook.MAPIFolder target_folder)
+    {
+      Outlook.Rule rule = fnFindRuleByName(rule_name);
+      bool ok_added = false;
+      bool email_exist = false;
+      string recipient_address;
+
+      //CREATE NEW RULE
+      if (rule == null)
+      {
+        rule = this.Rules.Create(rule_name, Outlook.OlRuleType.olRuleReceive);
+        rule.Actions.MoveToFolder.Folder = (target_folder);
+        rule.Actions.MoveToFolder.Enabled = true;
+        ok_added = true;
+      }
+      //CHECK IF THE EMAIL ADDRESS IS ALREADY ADDED
+      if (rule.Conditions.From.Recipients.Count > 0)
+      {
+        foreach (Outlook.Recipient _recipient in rule.Conditions.From.Recipients)
+        {
+          recipient_address = _thisAddIn.fnGetSenderAddress(_recipient);
+          if (!string.IsNullOrEmpty(recipient_address))
+          {
+            if (recipient_address.ToLower() == email_address.ToLower())
+            {
+              email_exist = true;
+              break;
+            }
+          }
+        }
+      }
+
+      //ADD THE NON EXISTING EMAILADDRESS
+      if (!email_exist)
+      {
+        rule.Conditions.From.Recipients.Add(email_address);
+        rule.Conditions.From.Recipients.ResolveAll();
+        rule.Conditions.From.Enabled = true;
+        ok_added = true;
+      }
+      return ok_added;
+    }
+
+    public bool fnRemoveEmailFromRule(string rule_name, string email_address)
+    {
+      string recipient_address;
+      bool ok_remove = false;
+      Outlook.Rule src_rule = this.fnFindRuleByName(rule_name);
+
+      if (src_rule != null)
+      {
+        foreach (Outlook.Recipient _recipient in src_rule.Conditions.From.Recipients)
+        {
+          recipient_address = _thisAddIn.fnGetSenderAddress(_recipient);
+          if (!string.IsNullOrEmpty(recipient_address))
+          {
+            if (recipient_address.ToLower() == email_address.ToLower())
+            {
+              _recipient.Delete();
+              _recipient.Resolve();
+              ok_remove = true;
+              break;
+            }
+          }
+        }
+      }
+      if (src_rule != null)
+      {
+        if (src_rule.Conditions.From.Recipients.Count == 0)
+        {
+          this.Rules.Remove(rule_name);
+          ok_remove = true;
+        }
+      }
+
+      return ok_remove;
+    }
+
+    public Outlook.Rule Create(string tarRulename, Outlook.OlRuleType olRuleReceive)
+    {
+      return Rules.Create(tarRulename, Outlook.OlRuleType.olRuleReceive);
+    }
+
+    public void Remove(string srcRulename)
+    {
+      Rules.Remove(srcRulename);
+    }
+
+    public void Save(bool b)
+    {
+      Rules.Save(b);
+      Reload();
+    }
+
+    public void Reload()
+    {
+      Rules = _application.Session.DefaultStore.GetRules();
+    }
+  }
 
   #region SenderData
   public class SenderData

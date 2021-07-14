@@ -45,12 +45,12 @@ namespace DragDrapWatcher_AddIn
             
           try
           {
-              if (Globals.ThisAddIn.GlobalRules == null || reload_rules)
-                  Globals.ThisAddIn.GlobalRules = Globals.ThisAddIn.Application.Session.DefaultStore.GetRules();
+            if (Globals.ThisAddIn.OutlookRules == null || reload_rules)
+              Globals.ThisAddIn.OutlookRules.Reload();
              
-              if (Globals.ThisAddIn.GlobalRules != null)
+              if (Globals.ThisAddIn.OutlookRules != null)
               {
-                  foreach (Outlook.Rule rule in Globals.ThisAddIn.GlobalRules)
+                  foreach (Outlook.Rule rule in Globals.ThisAddIn.OutlookRules.Rules)
                   {
                       if (rule.Name.ToLower().StartsWith(rule_prefix))
                       {
@@ -217,7 +217,7 @@ namespace DragDrapWatcher_AddIn
                         for (int i = 0; i < selected_rows.Count; i++)
                         {
                             DataGridViewRow itm = selected_rows[i];
-                            if ( Globals.ThisAddIn.fnRemoveEmailFromRule(
+                            if ( Globals.ThisAddIn.OutlookRules.fnRemoveEmailFromRule(
                                 itm.Cells[4].Value.ToString(),
                                 itm.Cells[1].Value.ToString()))
                             {
@@ -228,7 +228,7 @@ namespace DragDrapWatcher_AddIn
 
                         if (remove_count > 0)
                         {
-                            Globals.ThisAddIn.GlobalRules.Save(true);
+                            Globals.ThisAddIn.OutlookRules.Save(true);
                             MessageBox.Show("Deleted Email/s [" + remove_count + "] !", "FarCap Outlook Add-In");
                             btnSearch.PerformClick();
                         }
