@@ -1,0 +1,18 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="DragDrapWatcher_AddIn.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="WatchFolder_Prefix" Type="System.String" Scope="User">
+      <Value Profile="(Default)">#</Value>
+    </Setting>
+    <Setting Name="RuleName_Prefix" Type="System.String" Scope="User">
+      <Value Profile="(Default)">xaddin_</Value>
+    </Setting>
+    <Setting Name="Recipient" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="CategoryRulePrefix" Type="System.String" Scope="User">
+      <Value Profile="(Default)">#fcap_cat_</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
