@@ -72,7 +72,7 @@
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(87, 13);
             this.label1.TabIndex = 1;
-            this.label1.Text = "Search KeyWord";
+            this.label1.Text = "Search Keyword";
             // 
             // textBox1
             // 

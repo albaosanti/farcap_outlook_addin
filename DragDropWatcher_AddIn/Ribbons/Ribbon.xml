@@ -2,7 +2,7 @@
 <customUI onLoad="Ribbon_Load" xmlns="http://schemas.microsoft.com/office/2009/07/customui">
     <ribbon>
         <tabs>
-            <tab idMso="TabAddIns" label="ADD-IN X">
+            <tab idMso="TabAddIns" label="FARCAP">
                 <group id="group1" label="Manage Custom Rule">
                     <button id="btnManageSender" onAction="Controls_OnAction" label="Manage Sender" size="large" getImage="getSenderImage" />
                 </group>
@@ -12,13 +12,13 @@
   
     <contextMenus>
       <contextMenu idMso="ContextMenuFolder">
-        <menu id="btnFarCapMenu" label="FarCap Plugin" getImage="getFarCapImage" getEnabled="mnuFarCapEnable">
-          <button id="btnSyncRule" label="Sync Rule" onAction="Controls_OnAction" imageMso="ListSynchronize"  />
+        <menu id="btnFarCapMenu" label="Folder Rule" getImage="getFarCapImage" getEnabled="mnuFarCapEnable">
+          <button id="btnSyncRule" label="Synchronise" onAction="Controls_OnAction" imageMso="ListSynchronize"  />
         </menu>       
       </contextMenu>
       
        <contextMenu idMso="ContextMenuMailItem">
-        <dynamicMenu  id="btnFarCapCategory" label="FarCap Category" getImage="getFarCapImage" getContent="getContent_FarCapCategory"></dynamicMenu>       
+        <dynamicMenu  id="btnFarCapCategory" label="Category Rule" getImage="getFarCapImage" getContent="getContent_FarCapCategory"></dynamicMenu>       
       </contextMenu>
   </contextMenus>
   
