@@ -613,8 +613,19 @@ namespace DragDrapWatcher_AddIn
         rule.Actions.MoveToFolder.Enabled = true;
         ok_added = true;
       }
+
+      var recipientsCount = rule.Conditions.From.Recipients.Count;
+      //if (recipientsCount >= Properties.Settings.Default.MaxRecipients)
+      //{
+      //    MessageBox.Show($"We are only adding first {Properties.Settings.Default.MaxRecipients} recipients to the rule. \n\nPlease look for the software team, if you wish to add more recipients.",
+      //        "Rule processing interrupted!",
+      //        MessageBoxButtons.OK,
+      //        MessageBoxIcon.Warning);
+      //    throw new Exception("Rule processing interrupted!");
+      //}
+
       //CHECK IF THE EMAIL ADDRESS IS ALREADY ADDED
-      if (rule.Conditions.From.Recipients.Count > 0)
+      if (recipientsCount > 0)
       {
         foreach (Outlook.Recipient _recipient in rule.Conditions.From.Recipients)
         {

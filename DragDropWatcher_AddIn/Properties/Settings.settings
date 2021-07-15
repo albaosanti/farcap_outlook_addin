@@ -14,5 +14,8 @@
     <Setting Name="CategoryRulePrefix" Type="System.String" Scope="User">
       <Value Profile="(Default)">#fcap_cat_</Value>
     </Setting>
+    <Setting Name="MaxRecipients" Type="System.String" Scope="User">
+      <Value Profile="(Default)">1000</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
