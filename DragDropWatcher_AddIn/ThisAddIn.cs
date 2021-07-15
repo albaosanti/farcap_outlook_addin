@@ -86,7 +86,7 @@ namespace DragDrapWatcher_AddIn
     public string fnGetSenderAddress(object address)
     {
       string email = null;
-
+      string PR_SMTP_ADDRESS = @"http://schemas.microsoft.com/mapi/proptag/0x39FE001E";
       if (address == null) return null;
 
       if (address is Outlook.Recipient)
@@ -95,6 +95,9 @@ namespace DragDrapWatcher_AddIn
         email = recipient.Address;
         if (!Error_Sender.IsValidEmailAdd(email))
         {
+          if (recipient.AddressEntry.AddressEntryUserType != Outlook.OlAddressEntryUserType.olExchangeUserAddressEntry &&
+              recipient.AddressEntry.AddressEntryUserType != Outlook.OlAddressEntryUserType.olExchangeRemoteUserAddressEntry)
+            return recipient.PropertyAccessor.GetProperty(PR_SMTP_ADDRESS) as string;
           if (recipient.AddressEntry.GetExchangeUser() != null)
             email = recipient.AddressEntry.GetExchangeUser().PrimarySmtpAddress.Trim().ToLower();
           else if (Error_Sender.IsValidEmailAdd(recipient.Name))
