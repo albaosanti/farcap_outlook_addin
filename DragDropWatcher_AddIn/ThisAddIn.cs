@@ -541,7 +541,7 @@ namespace DragDrapWatcher_AddIn
 
     void Items_ItemChange(object item)
     {
-      MessageBox.Show("Change");
+      //MessageBox.Show("Change");
       //Outlook.TaskItem task = item as Outlook.TaskItem;
       //if (task != null)
       //{
