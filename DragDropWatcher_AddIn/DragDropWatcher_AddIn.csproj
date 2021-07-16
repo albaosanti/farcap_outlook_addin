@@ -36,14 +36,14 @@
     <TargetCulture>en</TargetCulture>
     <ApplicationVersion>1.0.0.185</ApplicationVersion>
     <AutoIncrementApplicationRevision>true</AutoIncrementApplicationRevision>
-    <UpdateEnabled>true</UpdateEnabled>
-    <UpdateInterval>7</UpdateInterval>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateInterval>0</UpdateInterval>
     <UpdateIntervalUnits>days</UpdateIntervalUnits>
-    <ProductName>DragDrapWatcher_AddIn</ProductName>
-    <PublisherName />
+    <ProductName>FarCap Addin</ProductName>
+    <PublisherName>Farallon Capital</PublisherName>
     <SupportUrl />
-    <FriendlyName>DragDrapWatcher_AddIn</FriendlyName>
-    <OfficeApplicationDescription />
+    <FriendlyName>FarCap AddIn</FriendlyName>
+    <OfficeApplicationDescription>Addin to improve email productivity</OfficeApplicationDescription>
     <LoadBehavior>3</LoadBehavior>
   </PropertyGroup>
   <ItemGroup>
