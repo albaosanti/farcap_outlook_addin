@@ -485,6 +485,7 @@ namespace DragDrapWatcher_AddIn
       string src_rule_name = "";
       string tar_rule_name = "";
       string rule_prefix = "";
+      string folder_prefix = "";
 
       bool ok_added = false;
       bool ok_removed = false;
@@ -500,14 +501,15 @@ namespace DragDrapWatcher_AddIn
           {
             oMsg = (Outlook.MailItem)Item;
             src_folder = (Outlook.Folder)oMsg.Parent;
-            rule_prefix = Properties.Settings.Default.WatchFolder_Prefix.Trim();
+            rule_prefix = Properties.Settings.Default.RuleName_Prefix.Trim();
+            folder_prefix = Properties.Settings.Default.WatchFolder_Prefix.Trim();
 
             if (string.IsNullOrWhiteSpace(oMsg.SenderEmailAddress))
               return;
 
             //REMOVE RULE FROM SOURCE FOLDER
             if (src_folder.Name.ToLower() != "inbox" &&
-                    src_folder.Name.ToLower().StartsWith(rule_prefix.ToLower()))
+                    src_folder.Name.ToLower().StartsWith(folder_prefix.ToLower()))
             {
               src_rule_name = rule_prefix + src_folder.Name;
               ok_removed = Globals.ThisAddIn.OutlookRules.fnRemoveEmailFromRule(src_rule_name, oMsg.SenderEmailAddress);
@@ -515,7 +517,7 @@ namespace DragDrapWatcher_AddIn
 
             //DESTINATION FOLDER
             if (TargetFolder.Name.ToLower() != "inbox" &&
-                    TargetFolder.Name.ToLower().StartsWith(rule_prefix.ToLower()))
+                    TargetFolder.Name.ToLower().StartsWith(folder_prefix.ToLower()))
             {
 
               tar_rule_name = rule_prefix + TargetFolder.Name;
