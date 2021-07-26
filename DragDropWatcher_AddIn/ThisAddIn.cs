@@ -93,28 +93,30 @@ namespace DragDrapWatcher_AddIn
       {
         Outlook.Recipient recipient = (Outlook.Recipient)address;
         email = recipient.Address;
-        if (!Error_Sender.IsValidEmailAdd(email))
-        {
-          if (recipient.AddressEntry.AddressEntryUserType != Outlook.OlAddressEntryUserType.olExchangeUserAddressEntry &&
-              recipient.AddressEntry.AddressEntryUserType != Outlook.OlAddressEntryUserType.olExchangeRemoteUserAddressEntry)
-            return recipient.PropertyAccessor.GetProperty(PR_SMTP_ADDRESS) as string;
-          if (recipient.AddressEntry.GetExchangeUser() != null)
-            email = recipient.AddressEntry.GetExchangeUser().PrimarySmtpAddress.Trim().ToLower();
-          else if (Error_Sender.IsValidEmailAdd(recipient.Name))
-            email = recipient.Name.Trim().ToLower();
-        }
+        if (Error_Sender.IsValidEmailAdd(email))
+          return email;
+        email = recipient.PropertyAccessor.GetProperty(PR_SMTP_ADDRESS);
+        if (Error_Sender.IsValidEmailAdd(email))
+          return email;
+        email = recipient.AddressEntry.GetExchangeUser()?.PrimarySmtpAddress.Trim().ToLower();
+        if (Error_Sender.IsValidEmailAdd(email))
+          return email;
+        email = recipient.Name.Trim().ToLower();
+        if (Error_Sender.IsValidEmailAdd(email))
+          return email;
       }
       else if (address is Outlook.AddressEntry)
       {
         Outlook.AddressEntry address_entry = (Outlook.AddressEntry)address;
         email = address_entry.Address;
-        if (!Error_Sender.IsValidEmailAdd(email))
-        {
-          if (address_entry.GetExchangeUser() != null)
-            email = address_entry.GetExchangeUser().PrimarySmtpAddress.Trim().ToLower();
-          else if (Error_Sender.IsValidEmailAdd(address_entry.Name))
-            email = address_entry.Name.Trim().ToLower();
-        }
+        if (Error_Sender.IsValidEmailAdd(email))
+          return email;
+        email = address_entry.GetExchangeUser()?.PrimarySmtpAddress.Trim().ToLower();
+        if (Error_Sender.IsValidEmailAdd(email))
+          return email;
+        email = address_entry.Name.Trim().ToLower();
+        if (Error_Sender.IsValidEmailAdd(email))
+          return email;
       }
 
       return email;
