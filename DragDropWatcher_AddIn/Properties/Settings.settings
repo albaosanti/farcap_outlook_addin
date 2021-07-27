@@ -17,5 +17,8 @@
     <Setting Name="MaxRecipients" Type="System.String" Scope="User">
       <Value Profile="(Default)">1000</Value>
     </Setting>
+    <Setting Name="MaxRuleRecipients" Type="System.String" Scope="User">
+      <Value Profile="(Default)">100</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

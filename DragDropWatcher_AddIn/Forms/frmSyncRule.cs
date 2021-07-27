@@ -15,48 +15,71 @@ namespace DragDrapWatcher_AddIn
     {
         #region Variables
         public Outlook.Folder parent_folder;
-        
+
+        private List<GroupSender> scanned_senders;
         private string rule_name;
-        private List<SenderData> scanned_senders;
         private bool cancelled = false;
         private int scan_period;
-        #endregion 
-                
-        #region Methods
-        private int CountUniqueSenders()
-        {
-            var cnt = 0;
-            var rule = Globals.ThisAddIn.OutlookRules.fnFindRuleByName(rule_name);
-            if (rule != null)
-                cnt = rule.Conditions.From.Recipients.Count;
 
-            return cnt;
-        }
+        private delegate void delFillGrid();        
+    #endregion
 
-        private string getFilterScanToDate()
+
+    #region Class
+    private class GroupSender
+    {
+      public SenderData sender;
+      public int count;
+      public GroupSender(SenderData _sender, int _count)
+      {
+        this.sender = _sender;
+        this.count = _count;
+      }
+    }
+    #endregion
+
+    #region Methods
+      private void fnFillGrid()
+      {
+        dgvList.Rows.Clear();
+        foreach (var row in scanned_senders)
+          dgvList.Rows.Add(new object[] { row.sender.Name, row.sender.EmailAddress, row.count });
+      }
+      
+      private int CountUniqueSenders()
+      {
+        var cnt = 0;
+        var rule = Globals.ThisAddIn.OutlookRules.fnFindRuleByName(rule_name);
+        if (rule != null)
+            cnt = rule.Conditions.From.Recipients.Count;
+
+        return cnt;
+      }
+
+      private string getFilterScanToDate()
+      {
+        DateTime scan_to = DateTime.Now;
+        string filter = "";
+        if (!chkAll.Checked)
         {
-            DateTime scan_to = DateTime.Now;
-            string filter = "";
-            if (!chkAll.Checked)
-            {
-                switch (scan_period)
-                {
-                    case 0:
-                        scan_to = scan_to.AddMonths(-(Convert.ToInt32(numScan.Value)));
-                        break;
-                    case 1:
-                        scan_to = scan_to.AddDays(-(Convert.ToDouble(numScan.Value) * 7));
-                        break;
-                    case 2:
-                        scan_to = scan_to.AddDays(-(Convert.ToDouble(numScan.Value)));
-                        break;
-                    default:
-                        break;
-                }
-                filter = "[Received]>'" + scan_to.AddDays(-1).ToShortDateString() + "'";
-            }
-            return filter;
+          switch (scan_period)
+          {
+              case 0:
+                  scan_to = scan_to.AddMonths(-(Convert.ToInt32(numScan.Value)));
+                  break;
+              case 1:
+                  scan_to = scan_to.AddDays(-(Convert.ToDouble(numScan.Value) * 7));
+                  break;
+              case 2:
+                  scan_to = scan_to.AddDays(-(Convert.ToDouble(numScan.Value)));
+                  break;
+              default:
+                  break;
+          }
+            filter = "[Received]>'" + scan_to.AddDays(-1).ToShortDateString() + "'";
         }
+        return filter;
+      }
         #endregion
 
         public frmSyncRule()
@@ -92,6 +115,8 @@ namespace DragDrapWatcher_AddIn
                 lblFoundSenders.Text = "Scanning..";
                 lblStatus.Text = "Started..";
 
+                dgvList.Rows.Clear();
+                dgvList.Enabled = false;
                 chkAll.Enabled = false;
                 numScan.Enabled = false;
                 cmbPeriod.Enabled = false;
@@ -122,7 +147,7 @@ namespace DragDrapWatcher_AddIn
             
             try
             {
-                scanned_senders = new List<SenderData>();
+                scanned_senders = new List<GroupSender>();
                 items = parent_folder.GetTable(getFilterScanToDate());
                 count = items.GetRowCount();
 
@@ -142,11 +167,24 @@ namespace DragDrapWatcher_AddIn
                     var emailAddress = (string)mailItem["SenderEmailAddress"];
 
                     progress = Convert.ToInt32(((Convert.ToDouble(index+1) / Convert.ToDouble(count)) * 100));
-                    bgwProcess.ReportProgress(progress, "Processing " + (index+1) + "/" + count);                   
-                    
-                    if (!string.IsNullOrEmpty(emailAddress) && uniqueEmails.Add(emailAddress))
-                        scanned_senders.Add(new SenderData(parent_folder.Name, name, emailAddress, senderType));
+                    bgwProcess.ReportProgress(progress, "Processing " + (index+1) + "/" + count);
 
+                    if (!string.IsNullOrEmpty(emailAddress))
+                    {
+                      emailAddress = emailAddress.ToLower();
+                      var senderdata = new SenderData(parent_folder.Name, name, emailAddress, senderType);
+                      if (uniqueEmails.Add(emailAddress))
+                        scanned_senders.Add(new GroupSender(senderdata, 1));
+                      else
+                      {
+                        var idx = scanned_senders.FindIndex(itm => String.Equals(itm.sender.EmailAddress, emailAddress, StringComparison.OrdinalIgnoreCase));
+                        if (idx > -1)                          scanned_senders[idx].count++;
+                      }
+                    }
+
+                bgwProcess.ReportProgress(0, "Populating grid..");
+                scanned_senders = scanned_senders.OrderByDescending(itm => itm.count).ToList();
+                this.Invoke(new delFillGrid(fnFillGrid));
                 }
 
             }
@@ -174,9 +212,14 @@ namespace DragDrapWatcher_AddIn
 
         private void bgwProcess_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
+            dgvList.Enabled = true;
             chkAll.Enabled = true;
-            numScan.Enabled = true;
-            cmbPeriod.Enabled = true;
+            if (!chkAll.Checked)
+            {
+              cmbPeriod.Enabled = true;
+              numScan.Enabled = true;
+            }
+
             btnProcess.Enabled = true;
             btnProcess.Text = "Start";
 
@@ -184,16 +227,11 @@ namespace DragDrapWatcher_AddIn
             {
                 btnSave.Enabled = true;
                 lblFoundSenders.Text = string.Format("Found {0} unique sender/s. ", scanned_senders.Count());
-
-                btnSave.PerformClick();
             }
             else
             {
-                lblFoundSenders.Text = "Stopped.";
-                if(cancelled) lblStatus.Text = "Stopped.";            
-            }
-
-            
+                lblFoundSenders.Text = "Stopped.";        
+            }            
         }
 
         private void frmSyncRule_Load(object sender, EventArgs e)
@@ -230,7 +268,7 @@ namespace DragDrapWatcher_AddIn
                             //INSERT ALL EMAIL ADDRESS
                             foreach (var sndr in scanned_senders)
                             {
-                                rule.Conditions.From.Recipients.Add(sndr.EmailAddress);
+                                rule.Conditions.From.Recipients.Add(sndr.sender.EmailAddress);
                                 rule.Conditions.From.Recipients.ResolveAll();
                                 rule.Conditions.From.Enabled = true;
                             }

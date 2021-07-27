@@ -6,14 +6,17 @@
                 <group id="group1" label="Manage Custom Rule">
                     <button id="btnManageSender" onAction="Controls_OnAction" label="Manage Sender" size="large" getImage="getSenderImage" />
                 </group>
+			    <group id="group2" label="Mail Counter">
+                     <button id="btnCountSender" onAction="Controls_OnAction" label="Count Entire Mailbox" size="large" getImage="getSenderImage" />
+                </group>
             </tab>
         </tabs>
     </ribbon>
   
     <contextMenus>
       <contextMenu idMso="ContextMenuFolder">
-        <menu id="btnFarCapMenu" label="Folder Rule" getImage="getFarCapImage" getEnabled="mnuFarCapEnable">
-          <button id="btnSyncRule" label="Synchronise" onAction="Controls_OnAction" imageMso="ListSynchronize"  />
+        <menu id="btnFarCapMenu" label="Folder Rule" getImage="getFarCapImage" getEnabled="mnuFarCapEnable" >
+          <button id="btnSyncRule" label="Synchronize" onAction="Controls_OnAction" imageMso="ListSynchronize"/>
         </menu>       
       </contextMenu>
       

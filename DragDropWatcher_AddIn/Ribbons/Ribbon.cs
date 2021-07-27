@@ -9,6 +9,7 @@ using System.Windows.Forms;
 
 using Outlook = Microsoft.Office.Interop.Outlook;
 using Office = Microsoft.Office.Core;
+using System.Collections.Specialized;
 
 
 
@@ -141,7 +142,6 @@ namespace DragDrapWatcher_AddIn
                     item.Save();
                     if (Globals.ThisAddIn.OutlookRules != null)
                       Globals.ThisAddIn.OutlookRules.Save(true);
-
 
                     MessageBox.Show("Selected category cleared!");
                   }
@@ -299,19 +299,24 @@ namespace DragDrapWatcher_AddIn
     {
       switch (control.Id.ToLower())
       {
-        case "btncat_manage":
-          frmCategoryManager cat_manager = new frmCategoryManager();
-          cat_manager.ShowDialog();
-          break;
+        /*RIBBON BUTTONS*/
         case "btnmanagesender":
           frmManager manager = new frmManager();
           manager.ShowDialog();
           break;
+       
+          /*MAIL FOLDER CONTEXT*/
         case "btnsyncrule":
           frmSyncRule sync = new frmSyncRule();
           sync.parent_folder = (Outlook.Folder)control.Context;
           sync.ShowDialog();
           break;
+      
+        case "btncat_manage":
+          frmCategoryManager cat_manager = new frmCategoryManager();
+          cat_manager.ShowDialog();
+          break;
+                  
         default:
           break;
 

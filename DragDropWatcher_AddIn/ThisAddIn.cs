@@ -78,13 +78,9 @@ namespace DragDrapWatcher_AddIn
 
     #region Rules Manipulation
 
-
-
-
-
-
     public string fnGetSenderAddress(object address)
     {
+      Outlook.ExchangeUser exchange_user = null;
       string email = null;
       string PR_SMTP_ADDRESS = @"http://schemas.microsoft.com/mapi/proptag/0x39FE001E";
       if (address == null) return null;
@@ -92,14 +88,17 @@ namespace DragDrapWatcher_AddIn
       if (address is Outlook.Recipient)
       {
         Outlook.Recipient recipient = (Outlook.Recipient)address;
+
         email = recipient.Address;
         if (!Error_Sender.IsValidEmailAdd(email))
         {
           if (recipient.AddressEntry.AddressEntryUserType != Outlook.OlAddressEntryUserType.olExchangeUserAddressEntry &&
               recipient.AddressEntry.AddressEntryUserType != Outlook.OlAddressEntryUserType.olExchangeRemoteUserAddressEntry)
             return recipient.PropertyAccessor.GetProperty(PR_SMTP_ADDRESS) as string;
-          if (recipient.AddressEntry.GetExchangeUser() != null)
-            email = recipient.AddressEntry.GetExchangeUser().PrimarySmtpAddress.Trim().ToLower();
+
+          exchange_user = recipient.AddressEntry.GetExchangeUser();
+          if (exchange_user != null)
+            email = exchange_user.PrimarySmtpAddress.Trim().ToLower();
           else if (Error_Sender.IsValidEmailAdd(recipient.Name))
             email = recipient.Name.Trim().ToLower();
         }
@@ -110,8 +109,9 @@ namespace DragDrapWatcher_AddIn
         email = address_entry.Address;
         if (!Error_Sender.IsValidEmailAdd(email))
         {
-          if (address_entry.GetExchangeUser() != null)
-            email = address_entry.GetExchangeUser().PrimarySmtpAddress.Trim().ToLower();
+          exchange_user = address_entry.GetExchangeUser();
+          if (exchange_user != null)
+            email = exchange_user.PrimarySmtpAddress.Trim().ToLower();
           else if (Error_Sender.IsValidEmailAdd(address_entry.Name))
             email = address_entry.Name.Trim().ToLower();
         }

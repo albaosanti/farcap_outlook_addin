@@ -71,7 +71,7 @@ namespace DragDrapWatcher_AddIn
                 string profileName = outNS.CurrentUser.Name;
 
                 Outlook.Folders folders = outNS.Folders;
-
+        
                 ValidFolders = new List<string[]>();
                 cmbTarget.Items.Clear();
 
