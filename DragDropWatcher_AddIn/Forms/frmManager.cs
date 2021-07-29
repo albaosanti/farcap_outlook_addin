@@ -16,93 +16,26 @@ namespace DragDrapWatcher_AddIn
   public partial class frmManager : Form
   {
     private delegate void del_AddRow(object[] column_values);
-
-    private List<myWatchEmail> watch_list = new List<myWatchEmail>();
-    #region Classes
-    private class myWatchEmail
-    {
-      public string destination_folder;
-      public string email_add;
-      public string email_name;
-      public string rule_name;
-      public string folder_name;
-
-      public myWatchEmail() { }
-      public myWatchEmail(string _dest, string _eadd, string _ename, string _rule, string _foldername)
-      {
-        this.destination_folder = _dest;
-        this.email_add = _eadd;
-        this.rule_name = _rule;
-        this.email_name = _ename;
-        this.folder_name = _foldername;
-      }
-    }
-
+    
+    #region
     private void UpdateWatchList(bool reload_rules = false)
     {
-      string rule_prefix = Properties.Settings.Default.RuleName_Prefix.ToLower().Trim();
-      watch_list = new List<myWatchEmail>();
-
       try
       {
-        if (Globals.ThisAddIn.OutlookRules.Rules == null || reload_rules)
-          Globals.ThisAddIn.OutlookRules.Reload();
-
-        if (Globals.ThisAddIn.OutlookRules != null)
-        {
-          foreach (Outlook.Rule rule in Globals.ThisAddIn.OutlookRules.Rules)
-          {
-            if (rule.Name.ToLower().StartsWith(rule_prefix))
-            {
-              if (rule.RuleType == Outlook.OlRuleType.olRuleReceive
-                       && rule.Actions.MoveToFolder != null
-                       && rule.Conditions.From.Recipients != null)
-              {
-                foreach (Outlook.Recipient rp in rule.Conditions.From.Recipients)
-                {
-                  myWatchEmail watch_email = new myWatchEmail();
-                  watch_email.destination_folder = rule.Actions.MoveToFolder.Folder.FolderPath;
-                  watch_email.folder_name = rule.Actions.MoveToFolder.Folder.Name;
-                  watch_email.email_add = Globals.ThisAddIn.fnGetSenderAddress(rp);
-                  if (watch_email.email_add != null)
-                  {
-                    watch_email.email_name = rp.Name;
-                    watch_email.rule_name = rule.Name;
-                    watch_list.Add(watch_email);
-                  }
-                }
-              }
-            }
-          }
-        }
+        if(Globals.ThisAddIn.OutlookRules == null)
+          Globals.ThisAddIn.OutlookRules = new GlobalRules(Globals.ThisAddIn.Application,Globals.ThisAddIn);
+        else if (Globals.ThisAddIn.OutlookRules.Rules == null || 
+            Globals.ThisAddIn.OutlookRules.FarCapRuleSenders==null || 
+              reload_rules)
+          Globals.ThisAddIn.OutlookRules.Reload();        
       }
       catch (Exception ex)
-      {
-        MessageBox.Show(ex.Message + ex.StackTrace, "FarCap Outlook Add-In");
-      }
-
+      { MessageBox.Show(ex.Message + ex.StackTrace, "FarCap Outlook Add-In"); }
     }
-
-    public bool DeleteWatchItem(string email_add, string rule_name)
-    {
-      bool rem = false;
-      for (int i = 0; i < watch_list.Count; i++)
-      {
-        if (watch_list[i].rule_name.ToLower() == rule_name.ToLower() &&
-            watch_list[i].email_add.ToLower() == email_add.ToLower())
-        {
-          watch_list.RemoveAt(i);
-          rem = true;
-          break;
-        }
-      }
-      return rem;
-    }
-
-    #endregion
 
     private void AddRow(object[] column_values)
     { dgvList.Rows.Add(column_values); }
+    #endregion
 
     public frmManager()
     {
@@ -122,31 +55,19 @@ namespace DragDrapWatcher_AddIn
       {
         try
         {
-          foreach (myWatchEmail em in watch_list)
+          foreach (var farcapsender in Globals.ThisAddIn.OutlookRules.FarCapRuleSenders)
           {
             match = (checkedListBox1.GetItemChecked(0) &&
-                    em.email_name.ToLower().Contains(key_word));
-
-            if (!match)
-            {
-              match = (checkedListBox1.GetItemChecked(1) &&
-                em.email_add.ToLower().Contains(key_word));
-            }
-            if (!match)
-            {
-              match = (checkedListBox1.GetItemChecked(2) &&
-                em.folder_name.ToLower().Contains(key_word));
-            }
-
+                    farcapsender.sender_name.ToLower().Contains(key_word)) || 
+                    (checkedListBox1.GetItemChecked(1) && farcapsender.sender_email.ToLower().Contains(key_word)) || 
+                    (checkedListBox1.GetItemChecked(2) &&farcapsender.folder_name.ToLower().Contains(key_word));
 
             if (match)
-            {
-              dgvList.Rows.Add(new object[]{ em.email_name ,
-                                em.email_add,
-                                em.folder_name,
-                                em.destination_folder,
-                                em.rule_name});
-            }
+              dgvList.Rows.Add(new object[]{ farcapsender.sender_name,
+                                farcapsender.sender_email,
+                                farcapsender.folder_name,
+                                farcapsender.folder_path,
+                                farcapsender.rulename});
           }
         }
         catch (Exception ex)
@@ -156,13 +77,13 @@ namespace DragDrapWatcher_AddIn
       }
       else
       {
-        foreach (myWatchEmail em in watch_list)
+        foreach (var farcapsender in Globals.ThisAddIn.OutlookRules.FarCapRuleSenders)
         {
-          dgvList.Rows.Add(new object[]{ em.email_name ,
-                                em.email_add,
-                                em.folder_name,
-                                em.destination_folder,
-                                em.rule_name});
+          dgvList.Rows.Add(new object[]{ farcapsender.sender_name,
+                                farcapsender.sender_email,
+                                farcapsender.folder_name,
+                                farcapsender.folder_path,
+                                farcapsender.rulename});
         }
       }
       lblStatus.Text = "[" + dgvList.RowCount + "] account match found.";
@@ -202,6 +123,8 @@ namespace DragDrapWatcher_AddIn
       txtFolder.Text = Properties.Settings.Default.WatchFolder_Prefix;
       txtRecipient.Text = Properties.Settings.Default.Recipient;
       txtCategoryPrefix.Text = Properties.Settings.Default.CategoryRulePrefix;
+      numMaxRecipient.Value = Properties.Settings.Default.MaxRuleRecipients;
+
       btnRefresh.PerformClick();
     }
 
@@ -218,13 +141,10 @@ namespace DragDrapWatcher_AddIn
             for (int i = 0; i < selected_rows.Count; i++)
             {
               DataGridViewRow itm = selected_rows[i];
-              if (Globals.ThisAddIn.OutlookRules.fnRemoveEmailFromRule(
+              if (Globals.ThisAddIn.OutlookRules.RemoveEmailFromRule(
                   itm.Cells[4].Value.ToString(),
                   itm.Cells[1].Value.ToString()))
-              {
-                remove_count += 1;
-                DeleteWatchItem(itm.Cells[1].Value.ToString(), itm.Cells[4].Value.ToString());
-              }
+                remove_count++;
             }
 
             if (remove_count > 0)
@@ -250,8 +170,9 @@ namespace DragDrapWatcher_AddIn
       string folder_prefix = txtFolder.Text.Trim();
       string err_recipients = txtRecipient.Text.Trim();
       string cat_prefix = txtCategoryPrefix.Text.Trim();
+      int rulerecipient =  Convert.ToInt32(numMaxRecipient.Value);
 
-      if (rule_prefix != "" && folder_prefix != "" && err_recipients != "" && cat_prefix != "")
+      if (rule_prefix != string.Empty && folder_prefix != string.Empty && err_recipients != string.Empty && cat_prefix != string.Empty)
       {
         if (MessageBox.Show("Confirm to UPDATE the configuration?", "Confirm Update - FarCap Outlook Add-In", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == System.Windows.Forms.DialogResult.Yes)
         {
@@ -259,6 +180,7 @@ namespace DragDrapWatcher_AddIn
           Properties.Settings.Default.RuleName_Prefix = rule_prefix;
           Properties.Settings.Default.Recipient = err_recipients;
           Properties.Settings.Default.CategoryRulePrefix = cat_prefix;
+          Properties.Settings.Default.MaxRuleRecipients = rulerecipient;
 
           Properties.Settings.Default.Save();
 
@@ -296,23 +218,23 @@ namespace DragDrapWatcher_AddIn
     {
       clsSendNotif err_notif = new clsSendNotif();
       if (err_notif.SendTestNotification("This is a test message.", txtRecipient.Text))
-        MessageBox.Show("Sent!");
+        MessageBox.Show("Sent!", "FarCap Add-In");
       else
-        MessageBox.Show("Failed to send!");
+        MessageBox.Show("Failed to send!", "FarCap Add-In");
 
     }
 
     private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
     {
       UpdateWatchList(true);
-      foreach (myWatchEmail em in watch_list)
+      foreach (var farcapsender in Globals.ThisAddIn.OutlookRules.FarCapRuleSenders)
       {
         this.Invoke(new del_AddRow(AddRow),
-         new object[] { new object[]{ em.email_name ,
-                        em.email_add,
-                        em.folder_name,
-                        em.destination_folder,
-                        em.rule_name}});
+         new object[] { new object[]{ farcapsender.sender_name,
+                                farcapsender.sender_email,
+                                farcapsender.folder_name,
+                                farcapsender.folder_path,
+                                farcapsender.rulename}});
       }
     }
 
@@ -321,7 +243,12 @@ namespace DragDrapWatcher_AddIn
       btnDelete.Enabled = true;
       btnEdit.Enabled = true;
       btnRefresh.Enabled = true;
-      lblStatus.Text = "[" + watch_list.Count + "] email account/s on watch list.";
+      lblStatus.Text = "["  + Globals.ThisAddIn.OutlookRules.FarCapRuleSenders.Count() + "] email account/s on watch list.";
+    }
+
+    private void numMaxRecipient_ValueChanged(object sender, EventArgs e)
+    {
+
     }
   }
 }

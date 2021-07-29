@@ -6,9 +6,6 @@
                 <group id="group1" label="Manage Custom Rule">
                     <button id="btnManageSender" onAction="Controls_OnAction" label="Manage Sender" size="large" getImage="getSenderImage" />
                 </group>
-			    <group id="group2" label="Mail Counter">
-                     <button id="btnCountSender" onAction="Controls_OnAction" label="Count Entire Mailbox" size="large" getImage="getSenderImage" />
-                </group>
             </tab>
         </tabs>
     </ribbon>

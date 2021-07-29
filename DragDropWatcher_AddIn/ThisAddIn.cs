@@ -12,6 +12,8 @@ using System.Text.RegularExpressions;
 
 using Outlook = Microsoft.Office.Interop.Outlook;
 using Office = Microsoft.Office.Core;
+using System.CodeDom;
+using Microsoft.Office.Interop.Outlook;
 
 namespace DragDrapWatcher_AddIn
 {
@@ -27,7 +29,7 @@ namespace DragDrapWatcher_AddIn
     {
       Outlook._NameSpace outNS = null;
       SuperMailFolder folderToWrap = null;
-
+      
       try
       {
 
@@ -62,7 +64,7 @@ namespace DragDrapWatcher_AddIn
             $"End Scanning folder :: FullFolderPath: {folder.FullFolderPath}, Name: {folder.Name}, Time taken : {stopwatch.Elapsed.ToString()}");
         }
       }
-      catch (Exception ex)
+      catch (System.Exception ex)
       { Error_Sender.SendNotification(ex.Message + ex.StackTrace); }
 
     }
@@ -80,7 +82,6 @@ namespace DragDrapWatcher_AddIn
 
     public string fnGetSenderAddress(object address)
     {
-      Outlook.ExchangeUser exchange_user = null;
       string email = null;
       string PR_SMTP_ADDRESS = @"http://schemas.microsoft.com/mapi/proptag/0x39FE001E";
       if (address == null) return null;
@@ -123,7 +124,7 @@ namespace DragDrapWatcher_AddIn
     #region Rule Category Assigning
     public bool fnAddEmailToRule_Category(string rule_name, string email_address, string _category)
     {
-      Outlook.Rule rule = OutlookRules.fnFindRuleByName(rule_name);
+      Outlook.Rule rule = OutlookRules.FindRuleByName(rule_name);
       bool ok_added = false;
       bool email_exist = false;
 
@@ -247,6 +248,31 @@ namespace DragDrapWatcher_AddIn
     #endregion
   }
 
+  #region FarCapSender Class
+  public class FarCapSender
+  {
+    public string rulename;
+    public string sender_name;
+    public string sender_email;
+    public string folder_name;
+    public string folder_path;
+    public int rule_number;
+
+    public FarCapSender(string _rulename, string _email, string _name, string _folder, string _folder_path)
+    {
+      this.rulename = _rulename;
+      this.sender_email = _email;
+      this.sender_name = _name;
+      this.folder_name = _folder;
+      this.rule_number = 0;
+      //GET FOLDER INDEX
+      var idx = rulename.LastIndexOf('_');
+      if (idx > -1 && idx < rulename.Length - 1)
+        int.TryParse(rulename.Substring(idx + 1), out rule_number);
+    }
+  }
+  #endregion
+
   #region Error Notification Class
   public class clsSendNotif
   {
@@ -262,7 +288,7 @@ namespace DragDrapWatcher_AddIn
       Outlook.Recipient mailRecipient = null;
 
       List<string> recipients = Split_Recipients(Properties.Settings.Default.Recipient);
-      string ex_msg = "";
+      string ex_msg = string.Empty;
       try
       {
         if (recipients.Count > 0)
@@ -293,7 +319,7 @@ namespace DragDrapWatcher_AddIn
           ex_msg = "No recipient.";
         }
       }
-      catch (Exception ex)
+      catch (System.Exception ex)
       {
         ex_msg = ex.Message + ex.StackTrace;
       }
@@ -323,7 +349,7 @@ namespace DragDrapWatcher_AddIn
       Outlook.Recipient mailRecipient = null;
 
       List<string> recipients = Split_Recipients(str_recipients);
-      string ex_msg = "";
+      string ex_msg = string.Empty;
       try
       {
         if (recipients.Count > 0)
@@ -353,7 +379,7 @@ namespace DragDrapWatcher_AddIn
           ex_msg = "No recipient.";
         }
       }
-      catch (Exception ex)
+      catch (System.Exception ex)
       {
         ex_msg = ex.Message + ex.StackTrace;
       }
@@ -392,7 +418,7 @@ namespace DragDrapWatcher_AddIn
         writer.Dispose();
         writer = null;
       }
-      catch (Exception ex)
+      catch (System.Exception ex)
       {
         MessageBox.Show("Failed to write log!\nException: " + ex.Message +
             "\n\nMessage:" + str_message, "FarCap Outlook Add-in");
@@ -457,7 +483,7 @@ namespace DragDrapWatcher_AddIn
         //assign event handlers for the folder
         _wrappedFolder.Items.ItemAdd += Items_ItemAdd;
         _wrappedFolder.BeforeItemMove += Before_ItemMoveListener;
-        _wrappedFolder.Items.ItemChange += new Outlook.ItemsEvents_ItemChangeEventHandler(Items_ItemChange);
+        //_wrappedFolder.Items.ItemChange += new Outlook.ItemsEvents_ItemChangeEventHandler(Items_ItemChange);
 
         //Go through all the subfolders and wrap them as well
         foreach (Outlook.Folder tmpFolder in _wrappedFolder.Folders)
@@ -474,17 +500,18 @@ namespace DragDrapWatcher_AddIn
           }
         }
       }
-      catch (Exception ex)
+      catch (System.Exception ex)
       { Globals.ThisAddIn.Error_Sender.SendNotification(ex.Message + ex.StackTrace); }
     }
     #endregion
 
     private void Before_ItemMoveListener(object Item, Outlook.MAPIFolder TargetFolder, ref bool Cancel)
     {
-      string src_rule_name = "";
-      string tar_rule_name = "";
-      string rule_prefix = "";
-      string folder_prefix = "";
+      string src_ruleprefix = string.Empty;
+      string target_ruleprefix = string.Empty;
+      string rule_prefix = string.Empty;
+      string folder_prefix = string.Empty;
+      string sender_address = string.Empty;
 
       bool ok_added = false;
       bool ok_removed = false;
@@ -496,31 +523,38 @@ namespace DragDrapWatcher_AddIn
       {
         if (Item is Outlook.MailItem && TargetFolder != null)
         {
-          if (!TargetFolder.Name.ToLower().Equals("deleted items"))
+          if (!TargetFolder.Name.StartsWith("deleted items",StringComparison.OrdinalIgnoreCase))
           {
             oMsg = (Outlook.MailItem)Item;
             src_folder = (Outlook.Folder)oMsg.Parent;
             rule_prefix = Properties.Settings.Default.RuleName_Prefix.Trim();
             folder_prefix = Properties.Settings.Default.WatchFolder_Prefix.Trim();
+            sender_address = Globals.ThisAddIn.fnGetSenderAddress(oMsg.Sender);
 
-            if (string.IsNullOrWhiteSpace(oMsg.SenderEmailAddress))
+            if (string.IsNullOrWhiteSpace(sender_address))
               return;
 
-            //REMOVE RULE FROM SOURCE FOLDER
-            if (src_folder.Name.ToLower() != "inbox" &&
-                    src_folder.Name.ToLower().StartsWith(folder_prefix.ToLower()))
+            //SOURCE FOLDER -> REMOVE FROM RULE
+            if (src_folder.Name.StartsWith(folder_prefix, StringComparison.OrdinalIgnoreCase))
             {
-              src_rule_name = rule_prefix + src_folder.Name;
-              ok_removed = Globals.ThisAddIn.OutlookRules.fnRemoveEmailFromRule(src_rule_name, oMsg.SenderEmailAddress);
+              src_ruleprefix = rule_prefix + src_folder.Name;
+              var to_remove = Globals.ThisAddIn.OutlookRules.FarCapRuleSenders.Where(
+                  row => row.sender_email.Equals(sender_address, StringComparison.OrdinalIgnoreCase) && 
+                        row.rulename.StartsWith(src_ruleprefix, StringComparison.OrdinalIgnoreCase)
+                  ).ToList();
+
+              foreach(var row in to_remove)
+              {
+                if(Globals.ThisAddIn.OutlookRules.RemoveEmailFromRule(row.rulename, row.sender_email))
+                  ok_removed = true;
+              }
             }
 
-            //DESTINATION FOLDER
-            if (TargetFolder.Name.ToLower() != "inbox" &&
-                    TargetFolder.Name.ToLower().StartsWith(folder_prefix.ToLower()))
+            //DESTINATION FOLDER -> ADD TO RULE
+            if (TargetFolder.Name.StartsWith(folder_prefix,StringComparison.OrdinalIgnoreCase))
             {
-
-              tar_rule_name = rule_prefix + TargetFolder.Name;
-              ok_added = Globals.ThisAddIn.OutlookRules.fnAddEmailToRule(tar_rule_name, oMsg.SenderEmailAddress, TargetFolder);
+              target_ruleprefix = rule_prefix + TargetFolder.Name;
+              ok_added = Globals.ThisAddIn.OutlookRules.AddEmailToRule(target_ruleprefix, sender_address, oMsg.SenderName, TargetFolder);
             }
 
             //Save rules
@@ -529,7 +563,7 @@ namespace DragDrapWatcher_AddIn
           }
         }
       }
-      catch (Exception ex)
+      catch (System.Exception ex)
       {
         Globals.ThisAddIn.Error_Sender.SendNotification(ex.Message + ex.StackTrace);
       }
@@ -542,12 +576,7 @@ namespace DragDrapWatcher_AddIn
 
     void Items_ItemChange(object item)
     {
-      //MessageBox.Show("Change");
-      //Outlook.TaskItem task = item as Outlook.TaskItem;
-      //if (task != null)
-      //{
-      //    MessageBox.Show(task.Subject);
-      //}
+     
     }
 
     #region Handler of addition item into a folder
@@ -562,7 +591,7 @@ namespace DragDrapWatcher_AddIn
           wrappedSubFolders.AddRange(tmpWrapFolder.wrappedSubFolders);
         }
       }
-      catch (Exception ex)
+      catch (System.Exception ex)
       {
         Globals.ThisAddIn.Error_Sender.SendNotification(ex.Message + ex.StackTrace);
       }
@@ -576,16 +605,89 @@ namespace DragDrapWatcher_AddIn
   {
     private readonly Outlook.Application _application;
     private readonly ThisAddIn _thisAddIn;
+
     public Outlook.Rules Rules = null;
+    public List<FarCapSender> FarCapRuleSenders = null;  
 
     public GlobalRules(Outlook.Application application, ThisAddIn thisAddIn)
     {
       _application = application;
       _thisAddIn = thisAddIn;
-      Rules = _application.Session.DefaultStore.GetRules();
+      this.Reload();
     }
 
-    public Outlook.Rule fnFindRuleByName(string rule_name)
+    public List<string> GetGroupRuleNames(string rulename_prefix)
+    {
+      List<string> rule_names = new List<string>();
+      if (FarCapRuleSenders != null)
+      {
+        var list = FarCapRuleSenders.Where(row =>
+                      row.rulename.StartsWith(rulename_prefix, StringComparison.OrdinalIgnoreCase))
+                      .GroupBy(g => new { g.rulename })
+                      .Select(s => new { Name = s.Key.rulename, Count = s.Count()}).ToList();
+
+        if(list != null)
+        {
+          foreach (var item in list)
+            rule_names.Add(item.Name);
+        }
+      }
+      return rule_names;
+    }
+
+    public void ClearRuleGroups(string rulename_prefix)
+    {
+      if (FarCapRuleSenders != null)
+      {
+        var list = FarCapRuleSenders.Where(row =>
+                     row.rulename.StartsWith(rulename_prefix, StringComparison.OrdinalIgnoreCase))
+                     .GroupBy(g => new { g.rulename })
+                     .Select(s => new { Name = s.Key.rulename, Count = s.Count() }).ToList();
+
+        if (list != null)
+        {
+          foreach (var item in list)
+            this.Remove(item.Name);
+        }
+      }
+    }
+
+    private string GetTargetRulenameGroup(string rulename_prefix)
+    {
+      string target_rulename = null;
+      var groups = FarCapRuleSenders.Where(row => row.rulename.StartsWith(rulename_prefix, StringComparison.OrdinalIgnoreCase))
+              .GroupBy(
+                  g => new { g.rulename, g.rule_number }
+              ).Select(
+                  new_group => new
+                      {
+                        Name = new_group.Key.rulename,
+                        Number = new_group.Key.rule_number,
+                        Count = new_group.Count()
+                      }
+              ).OrderBy(row => row.Number);
+
+      if (groups != null)
+      {
+        foreach (var g in groups)
+        {
+          if (g.Count < Properties.Settings.Default.MaxRuleRecipients)
+          {
+            target_rulename = g.Name;
+            break;
+          }
+        }
+      }
+     
+      //RULES ARE FULL or NO RULE CREATED YET 
+      if(target_rulename == null)
+        target_rulename = rulename_prefix + "_" + Convert.ToString((groups.Count() > 0 ? (groups.Last().Number + 1) : 1));
+
+      return target_rulename;
+    }
+
+
+    public Outlook.Rule FindRuleByName(string rule_name)
     {
       Outlook.Rule rule = null;
       if (this.Rules != null && !string.IsNullOrEmpty(rule_name))
@@ -602,90 +704,95 @@ namespace DragDrapWatcher_AddIn
       return rule;
     }
 
-    public bool fnAddEmailToRule(string rule_name, string email_address, Outlook.MAPIFolder target_folder)
+    public bool AddEmailToRule(string rulename_prefix, string email_address, string sender_name, Outlook.MAPIFolder target_folder)
     {
-      Outlook.Rule rule = fnFindRuleByName(rule_name);
+      Outlook.Rule rule = null;
+      string target_rulename = null;
       bool ok_added = false;
       bool email_exist = false;
-      string recipient_address;
 
-      //CREATE NEW RULE
-      if (rule == null)
+      if (FarCapRuleSenders == null || Rules == null) Reload();
+
+      var existing_emails = FarCapRuleSenders.FindAll(
+         row => row.sender_email.Equals(email_address, StringComparison.OrdinalIgnoreCase)
+      ).ToList();
+
+      //remove from other rules && FarCapSenderList
+      if (existing_emails != null)
       {
-        rule = this.Rules.Create(rule_name, Outlook.OlRuleType.olRuleReceive);
-        rule.Actions.MoveToFolder.Folder = (target_folder);
-        rule.Actions.MoveToFolder.Enabled = true;
-        ok_added = true;
-      }
-
-      var recipientsCount = rule.Conditions.From.Recipients.Count;
-      //if (recipientsCount >= Properties.Settings.Default.MaxRecipients)
-      //{
-      //    MessageBox.Show($"We are only adding first {Properties.Settings.Default.MaxRecipients} recipients to the rule. \n\nPlease look for the software team, if you wish to add more recipients.",
-      //        "Rule processing interrupted!",
-      //        MessageBoxButtons.OK,
-      //        MessageBoxIcon.Warning);
-      //    throw new Exception("Rule processing interrupted!");
-      //}
-
-      //CHECK IF THE EMAIL ADDRESS IS ALREADY ADDED
-      if (recipientsCount > 0)
-      {
-        foreach (Outlook.Recipient _recipient in rule.Conditions.From.Recipients)
+        foreach (var row in existing_emails)
         {
-          recipient_address = _thisAddIn.fnGetSenderAddress(_recipient);
-          if (!string.IsNullOrEmpty(recipient_address))
-          {
-            if (recipient_address.ToLower() == email_address.ToLower())
-            {
-              email_exist = true;
-              break;
-            }
-          }
+          if (row.rulename.StartsWith(rulename_prefix, StringComparison.OrdinalIgnoreCase))
+            email_exist = true;
+          else
+            RemoveEmailFromRule(row.rulename, row.sender_email);
         }
       }
-
-      //ADD THE NON EXISTING EMAILADDRESS
+     
       if (!email_exist)
       {
+        target_rulename = GetTargetRulenameGroup(rulename_prefix);
+        rule = FindRuleByName(target_rulename);       
+        if (rule == null)
+        {
+          rule = this.Rules.Create(target_rulename, Outlook.OlRuleType.olRuleReceive);
+          rule.Actions.MoveToFolder.Folder = (target_folder);
+          rule.Actions.MoveToFolder.Enabled = true;
+        }
         rule.Conditions.From.Recipients.Add(email_address);
         rule.Conditions.From.Recipients.ResolveAll();
         rule.Conditions.From.Enabled = true;
+        //ADD TO FarCapSenders
+        FarCapRuleSenders.Add(new FarCapSender(target_rulename, 
+          email_address, 
+          sender_name,
+          target_folder.Name,
+          target_folder.FolderPath));
+
         ok_added = true;
       }
       return ok_added;
     }
 
-    public bool fnRemoveEmailFromRule(string rule_name, string email_address)
+    public bool RemoveEmailFromRule(string rule_name, string email_address)
     {
       string recipient_address;
       bool ok_remove = false;
-      Outlook.Rule src_rule = this.fnFindRuleByName(rule_name);
+      Outlook.Rule src_rule = null;
 
-      if (src_rule != null)
+      if (FarCapRuleSenders == null || Rules == null) Reload();
+
+      if (FarCapRuleSenders.Exists(row => row.rulename.Equals(rule_name, StringComparison.OrdinalIgnoreCase)
+             && row.sender_email.Equals(email_address, StringComparison.OrdinalIgnoreCase)))
       {
-        foreach (Outlook.Recipient _recipient in src_rule.Conditions.From.Recipients)
+        src_rule = this.FindRuleByName(rule_name);
+        if (src_rule != null)
         {
-          recipient_address = _thisAddIn.fnGetSenderAddress(_recipient);
-          if (!string.IsNullOrEmpty(recipient_address))
+          foreach (Outlook.Recipient _recipient in src_rule.Conditions.From.Recipients)
           {
-            if (recipient_address.ToLower() == email_address.ToLower())
+            recipient_address = _thisAddIn.fnGetSenderAddress(_recipient);
+            if (!string.IsNullOrEmpty(recipient_address))
             {
-              _recipient.Delete();
-              _recipient.Resolve();
-              ok_remove = true;
-              break;
+              if (recipient_address.Equals(email_address,StringComparison.OrdinalIgnoreCase))
+              {
+                _recipient.Delete();
+                _recipient.Resolve();
+                ok_remove = true;
+                break;
+              }
             }
           }
+          if (src_rule.Conditions.From.Recipients.Count == 0)
+          {
+            this.Rules.Remove(rule_name);
+            ok_remove = true;
+          }
         }
-      }
-      if (src_rule != null)
-      {
-        if (src_rule.Conditions.From.Recipients.Count == 0)
-        {
-          this.Rules.Remove(rule_name);
-          ok_remove = true;
-        }
+
+        //REMOVE FROM FARCAPSENDER
+        FarCapRuleSenders.RemoveAll(
+            row => row.rulename.Equals(rule_name, StringComparison.OrdinalIgnoreCase) &&
+            row.sender_email.Equals(email_address, StringComparison.OrdinalIgnoreCase));
       }
 
       return ok_remove;
@@ -699,6 +806,9 @@ namespace DragDrapWatcher_AddIn
     public void Remove(string srcRulename)
     {
       Rules.Remove(srcRulename);
+      FarCapRuleSenders.RemoveAll(
+        row => row.rulename.Equals(srcRulename,
+        StringComparison.OrdinalIgnoreCase));
     }
 
     public void Save(bool b)
@@ -710,25 +820,23 @@ namespace DragDrapWatcher_AddIn
     public void Reload()
     {
       Rules = _application.Session.DefaultStore.GetRules();
+      FarCapRuleSenders = new List<FarCapSender>();
+      if (Rules != null)
+      {
+        foreach (Outlook.Rule rule in Rules)
+        {
+          if (rule.Name.Trim().StartsWith(Properties.Settings.Default.RuleName_Prefix, StringComparison.OrdinalIgnoreCase))
+          {
+            foreach (Outlook.Recipient _recipient in rule.Conditions.From.Recipients)
+              this.FarCapRuleSenders.Add(new FarCapSender(
+                rule.Name,
+                _thisAddIn.fnGetSenderAddress(_recipient),
+                _recipient.Name,
+                rule.Actions.MoveToFolder.Folder.Name,
+                rule.Actions.MoveToFolder.Folder.FolderPath));
+          }
+        }
+      }
     }
   }
-
-  #region SenderData
-  public class SenderData
-  {
-    public string Folder_name;
-    public string Name;
-    public string EmailAddress;
-    public string SenderType;
-
-    public SenderData(string _foldername, string _name, string _emailaddress, string _emailtype)
-    {
-      this.Folder_name = _foldername;
-      this.Name = _name;
-      this.EmailAddress = _emailaddress;
-      this.SenderType = _emailtype;
-    }
-  }
-  #endregion
-
 }

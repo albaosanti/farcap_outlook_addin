@@ -38,7 +38,7 @@ namespace DragDrapWatcher_AddIn
 
     private void UpdateWatchList(bool reload_rules = false)
     {
-      string categories = "";
+      string categories = string.Empty;
       string rule_prefix = Globals.ThisAddIn.CAT_RULE_PREFIX.Trim().ToLower();
 
       watch_list = new List<myWatchEmail>();
@@ -57,11 +57,11 @@ namespace DragDrapWatcher_AddIn
               if (rule.RuleType == Outlook.OlRuleType.olRuleReceive
                        && rule.Conditions.From.Recipients != null)
               {
-                categories = "";
+                categories = string.Empty;
 
                 foreach (string _cat in rule.Actions.AssignToCategory.Categories)
                 {
-                  if (categories != "")
+                  if (categories != string.Empty)
                     categories += ", ";
 
                   categories += _cat;
@@ -224,7 +224,7 @@ namespace DragDrapWatcher_AddIn
             for (int i = 0; i < selected_rows.Count; i++)
             {
               DataGridViewRow itm = selected_rows[i];
-              if (Globals.ThisAddIn.OutlookRules.fnRemoveEmailFromRule(
+              if (Globals.ThisAddIn.OutlookRules.RemoveEmailFromRule(
                   itm.Cells[3].Value.ToString(),
                   itm.Cells[1].Value.ToString()))
               {

@@ -86,9 +86,9 @@ namespace DragDrapWatcher_AddIn.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("100")]
-        public string MaxRuleRecipients {
+        public int MaxRuleRecipients {
             get {
-                return ((string)(this["MaxRuleRecipients"]));
+                return ((int)(this["MaxRuleRecipients"]));
             }
             set {
                 this["MaxRuleRecipients"] = value;

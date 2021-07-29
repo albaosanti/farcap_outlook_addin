@@ -73,7 +73,7 @@ namespace DragDrapWatcher_AddIn
     public string getContent_FarCapCategory(Office.IRibbonControl control)
     {
       Outlook.Categories cat_collection = null;
-      string sub_buttons = "";
+      string sub_buttons = string.Empty;
       int ctr = 1;
 
       sub_buttons = "<button id=\"btnCat_Manage\" label=\"Manage Rule Categories\" onAction=\"Controls_OnAction\" imageMso=\"CategorizeMenu\" />";
@@ -130,7 +130,7 @@ namespace DragDrapWatcher_AddIn
                       if (senderaddress != null)
                       {
                         Globals.ThisAddIn.fnRemoveMailCategory(ref categories, category.Trim());
-                        Globals.ThisAddIn.OutlookRules.fnRemoveEmailFromRule(rule_name, senderaddress);
+                        Globals.ThisAddIn.OutlookRules.RemoveEmailFromRule(rule_name, senderaddress);
                         changed = true;
                       }
                     }
@@ -276,7 +276,7 @@ namespace DragDrapWatcher_AddIn
                   if (alert_.Equals("ADD"))
                     ok = Globals.ThisAddIn.fnAddEmailToRule_Category(target_rulename, sender_address, selected_category);
                   else
-                    ok = Globals.ThisAddIn.OutlookRules.fnRemoveEmailFromRule(target_rulename, sender_address);
+                    ok = Globals.ThisAddIn.OutlookRules.RemoveEmailFromRule(target_rulename, sender_address);
 
                   //Save rules
                   if (Globals.ThisAddIn.OutlookRules != null && ok)

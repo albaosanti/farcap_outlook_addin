@@ -58,10 +58,10 @@ namespace DragDrapWatcher_AddIn
 
         private void btnChange_Click(object sender, EventArgs e)
         {
-            string tar_rulename = "";
-            string src_rulename = "";
+            string tar_rulename = string.Empty;
+            string src_rulename = string.Empty;
 
-            string sender_address = "";
+            string sender_address = string.Empty;
             string recipient_address;
 
             bool eadd_exist = false;
@@ -75,7 +75,7 @@ namespace DragDrapWatcher_AddIn
                     try
                     {
                         tar_rulename = Globals.ThisAddIn.CAT_RULE_PREFIX + cmbTarget.Text;
-                        Outlook.Rule tar_rule = Globals.ThisAddIn.OutlookRules.fnFindRuleByName(tar_rulename);
+                        Outlook.Rule tar_rule = Globals.ThisAddIn.OutlookRules.FindRuleByName(tar_rulename);
                         Outlook.Rule src_rule = null;
                         
                         //CREATE RULE 
@@ -95,12 +95,12 @@ namespace DragDrapWatcher_AddIn
 
                             eadd_exist = false;
 
-                            if (sender_address != "" &&
+                            if (sender_address != string.Empty &&
                                     row.Cells[3].Value.ToString().ToLower() !=
                                         cmbTarget.Text.ToLower())
                             {
                                 //DELETE THE EMAIL FROM THE PREVIOUS RULE
-                                src_rule = Globals.ThisAddIn.OutlookRules.fnFindRuleByName(src_rulename);
+                                src_rule = Globals.ThisAddIn.OutlookRules.FindRuleByName(src_rulename);
                                 if (src_rule != null)
                                 {
                                     foreach (Outlook.Recipient _recipient in src_rule.Conditions.From.Recipients)
