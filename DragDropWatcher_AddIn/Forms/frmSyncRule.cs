@@ -312,7 +312,7 @@ namespace DragDrapWatcher_AddIn
               Globals.ThisAddIn.OutlookRules.Save(true);
               stopWatch.Stop();
 
-              lblFoundSenders.Text = "Rule was update!";
+              lblFoundSenders.Text = "Rule was updated!";
               lblRuleSenders.Text = $"{scanned_senders.Count} unique sender {(scanned_senders.Count > 1 ? "s" : "")}.";
               lblStatus.Text = $"Saving rule took: {stopWatch.ElapsedMilliseconds} ms.";
 
