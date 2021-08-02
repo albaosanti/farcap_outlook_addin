@@ -183,6 +183,8 @@
     can be found.
   -->
   <ItemGroup>
+    <Compile Include="ClsSendNotif.cs" />
+    <Compile Include="FarCapSender.cs" />
     <Compile Include="Forms\frmEditCategory.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -213,6 +215,7 @@
     <Compile Include="Forms\frmSyncRule.Designer.cs">
       <DependentUpon>frmSyncRule.cs</DependentUpon>
     </Compile>
+    <Compile Include="GlobalRules.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -255,6 +258,7 @@
     <Compile Include="Ribbons\Ribbon.cs">
       <XmlRibbon>true</XmlRibbon>
     </Compile>
+    <Compile Include="SuperMailFolder.cs" />
     <Compile Include="ThisAddIn.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -282,7 +286,7 @@
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
   </PropertyGroup>
   <PropertyGroup>
-    <SignManifests>true</SignManifests>
+    <SignManifests>false</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
     <ManifestKeyFile>DragDrapWatcher_AddIn_TemporaryKey.pfx</ManifestKeyFile>

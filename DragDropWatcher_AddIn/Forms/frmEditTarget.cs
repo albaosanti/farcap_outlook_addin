@@ -89,9 +89,12 @@ namespace DragDrapWatcher_AddIn
     {
       foreach (Outlook.Folder sub_fldr in parent_folder)
       {
-        if (sub_fldr.Name.ToLower() == "deleted items") continue;
-        //if (path_ != string.Empty) path_ += "\\";
-        // path_ += sub_fldr.Name;
+        if (sub_fldr.Name.ToLower() == "deleted items" ||
+            sub_fldr.Name.StartsWith("Vault", StringComparison.InvariantCultureIgnoreCase) ||
+            sub_fldr.Name.StartsWith("Public Folder", StringComparison.InvariantCultureIgnoreCase))
+        {
+          continue;
+        }
 
         if (sub_fldr.Name.ToLower().StartsWith(Properties.Settings.Default.WatchFolder_Prefix.ToLower()))
         {

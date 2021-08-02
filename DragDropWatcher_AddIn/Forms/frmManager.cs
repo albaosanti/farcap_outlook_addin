@@ -216,7 +216,7 @@ namespace DragDrapWatcher_AddIn
 
     private void linkLabel2_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
     {
-      clsSendNotif err_notif = new clsSendNotif();
+      ClsSendNotif err_notif = new ClsSendNotif();
       if (err_notif.SendTestNotification("This is a test message.", txtRecipient.Text))
         MessageBox.Show("Sent!", "FarCap Add-In");
       else
