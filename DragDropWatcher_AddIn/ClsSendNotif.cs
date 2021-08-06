@@ -132,6 +132,10 @@ namespace DragDrapWatcher_AddIn
       return ok_sent;
     }
 
+    public void WriteLog(string str_message)
+    {
+      WriteLog(string.Empty, str_message);
+    }
     public void WriteLog(string ex_msg, string str_message)
     {
 

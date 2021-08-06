@@ -215,7 +215,7 @@
             0,
             0});
       this.numMaxRecipient.Minimum = new decimal(new int[] {
-            10,
+            1,
             0,
             0,
             0});
