@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace DragDrapWatcher_AddIn
 {
@@ -10,7 +11,7 @@ namespace DragDrapWatcher_AddIn
     private readonly ThisAddIn _thisAddIn;
 
     public Microsoft.Office.Interop.Outlook.Rules Rules = null;
-    public List<FarCapSender> FarCapRuleSenders = null;  
+    public List<FarCapSender> FarCapRuleSenders = null;
 
     public GlobalRules(Microsoft.Office.Interop.Outlook.Application application, ThisAddIn thisAddIn)
     {
@@ -27,9 +28,9 @@ namespace DragDrapWatcher_AddIn
         var list = FarCapRuleSenders.Where(row =>
             row.rulename.StartsWith(rulename_prefix, StringComparison.OrdinalIgnoreCase))
           .GroupBy(g => new { g.rulename })
-          .Select(s => new { Name = s.Key.rulename, Count = s.Count()}).ToList();
+          .Select(s => new { Name = s.Key.rulename, Count = s.Count() }).ToList();
 
-        if(list != null)
+        if (list != null)
         {
           foreach (var item in list)
             rule_names.Add(item.Name);
@@ -81,9 +82,9 @@ namespace DragDrapWatcher_AddIn
           }
         }
       }
-     
+
       //RULES ARE FULL or NO RULE CREATED YET 
-      if(target_rulename == null)
+      if (target_rulename == null)
         target_rulename = rulename_prefix + "_" + Convert.ToString((groups.Count() > 0 ? (groups.Last().Number + 1) : 1));
 
       return target_rulename;
@@ -121,33 +122,35 @@ namespace DragDrapWatcher_AddIn
       ).ToList();
 
       //remove from other rules && FarCapSenderList
-      if (existing_emails != null)
+      foreach (var row in existing_emails)
       {
-        foreach (var row in existing_emails)
+        if (row.rulename.StartsWith(rulename_prefix, StringComparison.OrdinalIgnoreCase))
+          email_exist = true;
+        else
         {
-          if (row.rulename.StartsWith(rulename_prefix, StringComparison.OrdinalIgnoreCase))
-            email_exist = true;
-          else
-            RemoveEmailFromRule(row.rulename, row.sender_email);
+          _thisAddIn.Error_Sender.WriteLog($"{MethodBase.GetCurrentMethod().Name} :: Removing {row.sender_email} from {row.rulename} !");
+          RemoveEmailFromRule(row.rulename, row.sender_email);
         }
       }
-     
+
       if (!email_exist)
       {
         target_rulename = GetTargetRulenameGroup(rulename_prefix);
-        rule = FindRuleByName(target_rulename);       
+        rule = FindRuleByName(target_rulename);
         if (rule == null)
         {
+          _thisAddIn.Error_Sender.WriteLog($"{MethodBase.GetCurrentMethod().Name} :: Creating Rule {target_rulename}!");
           rule = this.Rules.Create(target_rulename, Microsoft.Office.Interop.Outlook.OlRuleType.olRuleReceive);
           rule.Actions.MoveToFolder.Folder = (target_folder);
           rule.Actions.MoveToFolder.Enabled = true;
         }
+        _thisAddIn.Error_Sender.WriteLog($"{MethodBase.GetCurrentMethod().Name} :: Adding {email_address} to {target_rulename}!");
         rule.Conditions.From.Recipients.Add(email_address);
         rule.Conditions.From.Recipients.ResolveAll();
         rule.Conditions.From.Enabled = true;
         //ADD TO FarCapSenders
-        FarCapRuleSenders.Add(new FarCapSender(target_rulename, 
-          email_address, 
+        FarCapRuleSenders.Add(new FarCapSender(target_rulename,
+          email_address,
           sender_name,
           target_folder.Name,
           target_folder.FolderPath));
@@ -176,7 +179,7 @@ namespace DragDrapWatcher_AddIn
             recipient_address = _thisAddIn.fnGetSenderAddress(_recipient);
             if (!string.IsNullOrEmpty(recipient_address))
             {
-              if (recipient_address.Equals(email_address,StringComparison.OrdinalIgnoreCase))
+              if (recipient_address.Equals(email_address, StringComparison.OrdinalIgnoreCase))
               {
                 _recipient.Delete();
                 _recipient.Resolve();

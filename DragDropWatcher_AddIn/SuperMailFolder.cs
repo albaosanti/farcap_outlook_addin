@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Microsoft.Office.Interop.Outlook;
 
 namespace DragDrapWatcher_AddIn
@@ -59,10 +60,10 @@ namespace DragDrapWatcher_AddIn
 
       try
       {
-        Globals.ThisAddIn.Error_Sender.WriteLog("Drag and drop triggered!");
+        Globals.ThisAddIn.Error_Sender.WriteLog($"{MethodBase.GetCurrentMethod().Name} :: Drag and drop triggered!");
         if (Item is MailItem && TargetFolder != null)
         {
-          Globals.ThisAddIn.Error_Sender.WriteLog($"Drag and drop happening for folder : {TargetFolder.Name}");
+          Globals.ThisAddIn.Error_Sender.WriteLog($"{MethodBase.GetCurrentMethod().Name} :: Drag and drop happening for folder : {TargetFolder.Name}");
           if (!TargetFolder.Name.StartsWith("deleted items", StringComparison.OrdinalIgnoreCase))
           {
             oMsg = (MailItem)Item;
@@ -73,7 +74,7 @@ namespace DragDrapWatcher_AddIn
 
             if (string.IsNullOrWhiteSpace(sender_address))
             {
-              Globals.ThisAddIn.Error_Sender.WriteLog("Sender Address is Null or empty!");
+              Globals.ThisAddIn.Error_Sender.WriteLog($"{MethodBase.GetCurrentMethod().Name} :: Sender Address is Null or empty!");
               return;
             }
 
@@ -88,27 +89,29 @@ namespace DragDrapWatcher_AddIn
 
               foreach (var row in to_remove)
               {
+                Globals.ThisAddIn.Error_Sender.WriteLog($"{MethodBase.GetCurrentMethod().Name} :: Removing {row.sender_email} from {row.rulename} !");
                 if (Globals.ThisAddIn.OutlookRules.RemoveEmailFromRule(row.rulename, row.sender_email))
                   ok_removed = true;
               }
             }
             else
             {
-              Globals.ThisAddIn.Error_Sender.WriteLog($"Skip scanning source folder as it didn't start with #");
+              Globals.ThisAddIn.Error_Sender.WriteLog($"{MethodBase.GetCurrentMethod().Name} :: Skip scanning source folder as it didn't start with #");
             }
 
             //DESTINATION FOLDER -> ADD TO RULE
             if (TargetFolder.Name.StartsWith(folder_prefix, StringComparison.OrdinalIgnoreCase))
             {
               target_ruleprefix = rule_prefix + TargetFolder.Name;
+              Globals.ThisAddIn.Error_Sender.WriteLog($"{MethodBase.GetCurrentMethod().Name} :: Adding {sender_address} to {target_ruleprefix} on {TargetFolder.Name}!");
               ok_added = Globals.ThisAddIn.OutlookRules.AddEmailToRule(target_ruleprefix, sender_address, oMsg.SenderName, TargetFolder);
             }
             else
             {
-              Globals.ThisAddIn.Error_Sender.WriteLog($"Skip scanning target folder as it didn't start with #");
+              Globals.ThisAddIn.Error_Sender.WriteLog($"{MethodBase.GetCurrentMethod().Name} :: Skip scanning target folder as it didn't start with #");
             }
 
-            Globals.ThisAddIn.Error_Sender.WriteLog($"Drag and drop for {sender_address}, ok_added : {ok_added}, ok_removed : {ok_removed}");
+            Globals.ThisAddIn.Error_Sender.WriteLog($"{MethodBase.GetCurrentMethod().Name} :: Drag and drop for {sender_address}, ok_added : {ok_added}, ok_removed : {ok_removed}");
 
             //Save rules
             if (Globals.ThisAddIn.OutlookRules != null && (ok_added || ok_removed))
