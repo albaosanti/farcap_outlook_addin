@@ -7,26 +7,21 @@ namespace DragDrapWatcher_AddIn
 {
   public partial class ThisAddIn
   {
-    #region Global Variables
     public string CAT_RULE_PREFIX = string.IsNullOrWhiteSpace(Properties.Settings.Default.CategoryRulePrefix) ? "#fcap_cat_" : Properties.Settings.Default.CategoryRulePrefix;
     public GlobalRules OutlookRules = null;
     public ClsSendNotif Error_Sender = null;
-    #endregion
 
     private void ThisAddIn_Startup(object sender, System.EventArgs e)
     {
       Outlook._NameSpace outNS = null;
       SuperMailFolder folderToWrap = null;
-      
+
       try
       {
 
         Error_Sender = new ClsSendNotif();
         Outlook.Application application = this.Application;
-        //Get the MAPI namespace
         outNS = application.GetNamespace("MAPI");
-        OutlookRules = new GlobalRules(application, this);
-        //Get UserName
         string profileName = outNS.CurrentUser.Name;
 
         //DRAG & DROP WILL BE CREATED HERE
@@ -51,10 +46,13 @@ namespace DragDrapWatcher_AddIn
           Error_Sender.WriteLog(string.Empty,
             $"End Scanning folder :: FullFolderPath: {folder.FullFolderPath}, Name: {folder.Name}, Time taken : {stopwatch.Elapsed.ToString()}");
         }
+
+        OutlookRules = new GlobalRules(application, this);
       }
       catch (System.Exception ex)
-      { Error_Sender.SendNotification(ex.Message + ex.StackTrace); }
-
+      {
+        Error_Sender.SendNotification(ex.Message + ex.StackTrace);
+      }
     }
 
     private void ThisAddIn_Shutdown(object sender, System.EventArgs e)
@@ -65,8 +63,6 @@ namespace DragDrapWatcher_AddIn
     {
       return new Ribbon();
     }
-
-    #region Rules Manipulation
 
     public string fnGetSenderAddress(object address)
     {
@@ -107,9 +103,7 @@ namespace DragDrapWatcher_AddIn
 
       return email;
     }
-    #endregion
 
-    #region Rule Category Assigning
     public bool fnAddEmailToRule_Category(string rule_name, string email_address, string _category)
     {
       Outlook.Rule rule = OutlookRules.FindRuleByName(rule_name);
@@ -219,9 +213,6 @@ namespace DragDrapWatcher_AddIn
 
       return ok;
     }
-    #endregion
-
-    #region VSTO generated code
 
     /// <summary>
     /// Required method for Designer support - do not modify
@@ -229,10 +220,8 @@ namespace DragDrapWatcher_AddIn
     /// </summary>
     private void InternalStartup()
     {
-      this.Startup += new System.EventHandler(ThisAddIn_Startup);
-      this.Shutdown += new System.EventHandler(ThisAddIn_Shutdown);
+      this.Startup += ThisAddIn_Startup;
+      this.Shutdown += ThisAddIn_Shutdown;
     }
-
-    #endregion
   }
 }

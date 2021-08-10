@@ -226,18 +226,28 @@ namespace DragDrapWatcher_AddIn
     {
       Rules = _application.Session.DefaultStore.GetRules();
       FarCapRuleSenders = new List<FarCapSender>();
-      if (Rules != null)
+      if (Rules == null) return;
+      foreach (Microsoft.Office.Interop.Outlook.Rule rule in Rules)
       {
-        foreach (Microsoft.Office.Interop.Outlook.Rule rule in Rules)
+        if (!rule.Name.Trim()
+          .StartsWith(Properties.Settings.Default.RuleName_Prefix, StringComparison.OrdinalIgnoreCase)) continue;
+
+        foreach (Microsoft.Office.Interop.Outlook.Recipient _recipient in rule.Conditions.From.Recipients)
         {
-          if (rule.Name.Trim().StartsWith(Properties.Settings.Default.RuleName_Prefix, StringComparison.OrdinalIgnoreCase))
+          try
           {
-            foreach (Microsoft.Office.Interop.Outlook.Recipient _recipient in rule.Conditions.From.Recipients)
-              this.FarCapRuleSenders.Add(new FarCapSender(
-                rule.Name,
-                _thisAddIn.fnGetSenderAddress(_recipient),
-                _recipient.Name,
-                rule.Actions.MoveToFolder.Folder.Name));
+            var fnGetSenderAddress = _thisAddIn.fnGetSenderAddress(_recipient);
+            var recipientName = _recipient.Name;
+            var ruleActions = rule.Actions;
+            var ruleActionsMoveToFolder = ruleActions.MoveToFolder;
+            var mapiFolder = ruleActionsMoveToFolder.Folder;
+            var folderName = mapiFolder.Name;
+            var farCapSender = new FarCapSender(rule.Name, fnGetSenderAddress, recipientName, folderName);
+            this.FarCapRuleSenders.Add(farCapSender);
+          }
+          catch (Exception e)
+          {
+            _thisAddIn.Error_Sender.WriteLog($"{MethodBase.GetCurrentMethod().Name} :: Exception Message {e.Message}  {e.StackTrace} !");
           }
         }
       }
