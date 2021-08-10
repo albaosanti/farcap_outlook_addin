@@ -152,8 +152,7 @@ namespace DragDrapWatcher_AddIn
         FarCapRuleSenders.Add(new FarCapSender(target_rulename,
           email_address,
           sender_name,
-          target_folder.Name,
-          target_folder.FolderPath));
+          target_folder.Name));
 
         ok_added = true;
       }
@@ -238,8 +237,7 @@ namespace DragDrapWatcher_AddIn
                 rule.Name,
                 _thisAddIn.fnGetSenderAddress(_recipient),
                 _recipient.Name,
-                rule.Actions.MoveToFolder.Folder.Name,
-                rule.Actions.MoveToFolder.Folder.FolderPath));
+                rule.Actions.MoveToFolder.Folder.Name));
           }
         }
       }

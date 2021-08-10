@@ -180,7 +180,7 @@ namespace DragDrapWatcher_AddIn
           if (!string.IsNullOrEmpty(emailAddress))
           {
             emailAddress = emailAddress.ToLower();
-            var senderdata = new FarCapSender("", emailAddress, name, "", "");
+            var senderdata = new FarCapSender("", emailAddress, name, "");
 
             if (uniqueEmails.Add(emailAddress))
               scanned_senders.Add(new GroupSender(senderdata, 1));
@@ -304,8 +304,7 @@ namespace DragDrapWatcher_AddIn
                   Globals.ThisAddIn.OutlookRules.FarCapRuleSenders.Add(new FarCapSender(rulename,
                     scanned_senders[i].sender.sender_email,
                     scanned_senders[i].sender.sender_name,
-                    parent_folder.Name,
-                    parent_folder.FolderPath));
+                    parent_folder.Name));
                 }
               }
               //SAVE                            

@@ -9,7 +9,7 @@
     public string folder_path;
     public int rule_number;
 
-    public FarCapSender(string _rulename, string _email, string _name, string _folder, string _folder_path)
+    public FarCapSender(string _rulename, string _email, string _name, string _folder)
     {
       this.rulename = _rulename;
       this.sender_email = _email;
