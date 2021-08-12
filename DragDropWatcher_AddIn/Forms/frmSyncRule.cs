@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
 using System.Windows.Forms;
 using Outlook = Microsoft.Office.Interop.Outlook;
 
@@ -270,13 +267,16 @@ namespace DragDrapWatcher_AddIn
               this.Refresh();
 
               //CLEAR RULE GROUP
+              Globals.ThisAddIn.Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Clearing {rulename_prefix}");
               Globals.ThisAddIn.OutlookRules.ClearRuleGroups(rulename_prefix);
 
               for (var i = 0; i < scanned_senders.Count; i++)
               {
                 //REMOVE EMAIL ADDRESS IN ANY OTHER RULE
+                var scannedSender = scanned_senders[i];
+                Globals.ThisAddIn.Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Processing for {scannedSender.sender.sender_email}");
                 var match_email = Globals.ThisAddIn.OutlookRules.FarCapRuleSenders.Where(
-                    item => item.sender_email.Equals(scanned_senders[i].sender.sender_email, StringComparison.OrdinalIgnoreCase) &&
+                    item => item.sender_email.Equals(scannedSender.sender.sender_email, StringComparison.OrdinalIgnoreCase) &&
                       !item.rulename.StartsWith(rulename_prefix, StringComparison.OrdinalIgnoreCase)).ToList();
 
                 if (match_email!=null)
@@ -297,13 +297,13 @@ namespace DragDrapWatcher_AddIn
                 
                 if (rule != null)
                 {
-                  rule.Conditions.From.Recipients.Add(scanned_senders[i].sender.sender_email);
+                  rule.Conditions.From.Recipients.Add(scannedSender.sender.sender_email);
                   rule.Conditions.From.Recipients.ResolveAll();
                   rule.Conditions.From.Enabled = true;
 
                   Globals.ThisAddIn.OutlookRules.FarCapRuleSenders.Add(new FarCapSender(rulename,
-                    scanned_senders[i].sender.sender_email,
-                    scanned_senders[i].sender.sender_name,
+                    scannedSender.sender.sender_email,
+                    scannedSender.sender.sender_name,
                     parent_folder.Name));
                 }
               }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Reflection;
 using Outlook = Microsoft.Office.Interop.Outlook;
 using Office = Microsoft.Office.Core;
 
@@ -13,41 +14,50 @@ namespace DragDrapWatcher_AddIn
 
     private void ThisAddIn_Startup(object sender, System.EventArgs e)
     {
-      Outlook._NameSpace outNS = null;
       SuperMailFolder folderToWrap = null;
-
       try
       {
-
         Error_Sender = new ClsSendNotif();
+        Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: =============== Beginning Startup ===============");
         Outlook.Application application = this.Application;
-        outNS = application.GetNamespace("MAPI");
+        Outlook._NameSpace outNS = application.GetNamespace("MAPI");
         string profileName = outNS.CurrentUser.Name;
-
+        Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Profile Name : {profileName}");
         //DRAG & DROP WILL BE CREATED HERE
         Outlook.Folders folders = outNS.Folders;
         foreach (Outlook.Folder folder in folders)
         {
-          var stopwatch = Stopwatch.StartNew();
-          Error_Sender.WriteLog(string.Empty,
-            $"Start Scanning folder :: FullFolderPath: {folder.FullFolderPath}, Name: {folder.Name}, IsSharePointFolder: {folder.IsSharePointFolder}, InAppFolderSyncObject: {folder.InAppFolderSyncObject}");
-          if (folder.Name.StartsWith("Vault", StringComparison.InvariantCultureIgnoreCase) ||
-              folder.Name.StartsWith("Public Folder", StringComparison.InvariantCultureIgnoreCase))
+          try
           {
+            var stopwatch = Stopwatch.StartNew();
+            Error_Sender.WriteLog(string.Empty,
+              $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Start Scanning folder :: Name: {folder.Name}");
+            if (folder.Name.StartsWith("Vault", StringComparison.InvariantCultureIgnoreCase) ||
+                folder.Name.StartsWith("Public Folder", StringComparison.InvariantCultureIgnoreCase))
+            {
+              stopwatch.Stop();
+              Error_Sender.WriteLog(string.Empty,
+                $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Skip Scanning folder :: Name: {folder.Name}, Time taken : {stopwatch.Elapsed.ToString()}");
+              continue;
+            }
+
+            if (folder.DefaultItemType == Outlook.OlItemType.olMailItem)
+              folderToWrap = new SuperMailFolder(folder, profileName);
             stopwatch.Stop();
             Error_Sender.WriteLog(string.Empty,
-              $"Skip Scanning folder :: FullFolderPath: {folder.FullFolderPath}, Name: {folder.Name}, Time taken : {stopwatch.Elapsed.ToString()}");
-            continue;
+              $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: End Scanning folder :: Name: {folder.Name}, Time taken : {stopwatch.Elapsed.ToString()}");
           }
-
-          if (folder.DefaultItemType == Outlook.OlItemType.olMailItem)
-            folderToWrap = new SuperMailFolder(folder, profileName);
-          stopwatch.Stop();
-          Error_Sender.WriteLog(string.Empty,
-            $"End Scanning folder :: FullFolderPath: {folder.FullFolderPath}, Name: {folder.Name}, Time taken : {stopwatch.Elapsed.ToString()}");
+          catch (Exception ex)
+          {
+            Error_Sender.WriteLog(string.Empty,
+              $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Exception recorded on scanning folder {ex.ToString()}");
+          }
         }
+        Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Completed Scanning folders list");
 
         OutlookRules = new GlobalRules(application, this);
+
+        Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: =============== Startup Completed ===============");
       }
       catch (System.Exception ex)
       {
