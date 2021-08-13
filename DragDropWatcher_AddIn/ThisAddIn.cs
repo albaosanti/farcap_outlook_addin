@@ -14,15 +14,16 @@ namespace DragDrapWatcher_AddIn
 
     private void ThisAddIn_Startup(object sender, System.EventArgs e)
     {
+      string loggerPrefix = $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} ::";
       SuperMailFolder folderToWrap = null;
       try
       {
         Error_Sender = new ClsSendNotif();
-        Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: =============== Beginning Startup ===============");
+        Error_Sender.WriteLog($"{loggerPrefix} =============== Beginning Startup ===============");
         Outlook.Application application = this.Application;
         Outlook._NameSpace outNS = application.GetNamespace("MAPI");
         string profileName = outNS.CurrentUser.Name;
-        Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Profile Name : {profileName}");
+        Error_Sender.WriteLog($"{loggerPrefix}  Profile Name : {profileName}");
         //DRAG & DROP WILL BE CREATED HERE
         Outlook.Folders folders = outNS.Folders;
         foreach (Outlook.Folder folder in folders)
@@ -31,13 +32,13 @@ namespace DragDrapWatcher_AddIn
           {
             var stopwatch = Stopwatch.StartNew();
             Error_Sender.WriteLog(string.Empty,
-              $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Start Scanning folder :: Name: {folder.Name}");
+              $"{loggerPrefix}  Start Scanning folder :: Name: {folder.Name}");
             if (folder.Name.StartsWith("Vault", StringComparison.InvariantCultureIgnoreCase) ||
                 folder.Name.StartsWith("Public Folder", StringComparison.InvariantCultureIgnoreCase))
             {
               stopwatch.Stop();
               Error_Sender.WriteLog(string.Empty,
-                $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Skip Scanning folder :: Name: {folder.Name}, Time taken : {stopwatch.Elapsed.ToString()}");
+                $"{loggerPrefix}  Skip Scanning folder :: Name: {folder.Name}, Time taken : {stopwatch.Elapsed.ToString()}");
               continue;
             }
 
@@ -45,19 +46,19 @@ namespace DragDrapWatcher_AddIn
               folderToWrap = new SuperMailFolder(folder, profileName);
             stopwatch.Stop();
             Error_Sender.WriteLog(string.Empty,
-              $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: End Scanning folder :: Name: {folder.Name}, Time taken : {stopwatch.Elapsed.ToString()}");
+              $"{loggerPrefix}  End Scanning folder :: Name: {folder.Name}, Time taken : {stopwatch.Elapsed.ToString()}");
           }
           catch (Exception ex)
           {
             Error_Sender.WriteLog(string.Empty,
-              $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Exception recorded on scanning folder {ex.ToString()}");
+              $"{loggerPrefix}  Exception recorded on scanning folder {ex.ToString()}");
           }
         }
-        Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Completed Scanning folders list");
+        Error_Sender.WriteLog($"{loggerPrefix}  Completed Scanning folders list");
 
         OutlookRules = new GlobalRules(application, this);
 
-        Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: =============== Startup Completed ===============");
+        Error_Sender.WriteLog($"{loggerPrefix}  =============== Startup Completed ===============");
       }
       catch (System.Exception ex)
       {

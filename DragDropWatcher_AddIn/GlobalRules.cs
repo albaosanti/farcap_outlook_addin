@@ -110,6 +110,7 @@ namespace DragDrapWatcher_AddIn
 
     public bool AddEmailToRule(string rulename_prefix, string email_address, string sender_name, Microsoft.Office.Interop.Outlook.MAPIFolder target_folder)
     {
+      string loggerPrefix = $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} ::";
       Microsoft.Office.Interop.Outlook.Rule rule = null;
       string target_rulename = null;
       bool ok_added = false;
@@ -117,7 +118,7 @@ namespace DragDrapWatcher_AddIn
 
       if (FarCapRuleSenders == null || Rules == null)
       {
-        _thisAddIn.Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: NUll FarCapRuleSenders -> {FarCapRuleSenders == null} or NULL Rules {Rules == null} !");
+        _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  NUll FarCapRuleSenders -> {FarCapRuleSenders == null} or NULL Rules {Rules == null} !");
         Reload();
       }
 
@@ -132,7 +133,7 @@ namespace DragDrapWatcher_AddIn
           email_exist = true;
         else
         {
-          _thisAddIn.Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Removing {row.sender_email} from {row.rulename} !");
+          _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  Removing {row.sender_email} from {row.rulename} !");
           RemoveEmailFromRule(row.rulename, row.sender_email);
         }
       }
@@ -143,12 +144,12 @@ namespace DragDrapWatcher_AddIn
         rule = FindRuleByName(target_rulename);
         if (rule == null)
         {
-          _thisAddIn.Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Creating Rule {target_rulename}!");
+          _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  Creating Rule {target_rulename}!");
           rule = this.Rules.Create(target_rulename, Microsoft.Office.Interop.Outlook.OlRuleType.olRuleReceive);
           rule.Actions.MoveToFolder.Folder = (target_folder);
           rule.Actions.MoveToFolder.Enabled = true;
         }
-        _thisAddIn.Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Adding {email_address} to {target_rulename}!");
+        _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  Adding {email_address} to {target_rulename}!");
         rule.Conditions.From.Recipients.Add(email_address);
         rule.Conditions.From.Recipients.ResolveAll();
         rule.Conditions.From.Enabled = true;
@@ -228,11 +229,13 @@ namespace DragDrapWatcher_AddIn
 
     public void Reload()
     {
-      _thisAddIn.Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Getting Existing Rules!");
+      string loggerPrefix = $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} ::";
+
+      _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix} Getting Existing Rules!");
       Rules = _application.Session.DefaultStore.GetRules();
       if (Rules == null)
       {
-        _thisAddIn.Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Rules is null!");
+        _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix} Rules is null!");
         return;
       }
 
@@ -242,7 +245,7 @@ namespace DragDrapWatcher_AddIn
         if (!rule.Name.Trim()
           .StartsWith(Properties.Settings.Default.RuleName_Prefix, StringComparison.OrdinalIgnoreCase)) continue;
 
-        _thisAddIn.Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Scanning rule {rule.Name}");
+        _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix} Scanning rule {rule.Name}");
         
         foreach (Microsoft.Office.Interop.Outlook.Recipient _recipient in rule.Conditions.From.Recipients)
         {
@@ -260,11 +263,11 @@ namespace DragDrapWatcher_AddIn
           }
           catch (Exception e)
           {
-            _thisAddIn.Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: {fnGetSenderAddress} {recipientName} {folderName} Exception Message {e.Message}  {e.StackTrace}");
+            _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix} {fnGetSenderAddress} {recipientName} {folderName} Exception Message {e.Message}  {e.StackTrace}");
           }
         }
       }
-      _thisAddIn.Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Prepared {FarCapRuleSenders.Count} FarCapRuleSenders");
+      _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix} Prepared {FarCapRuleSenders.Count} FarCapRuleSenders");
     }
   }
 }

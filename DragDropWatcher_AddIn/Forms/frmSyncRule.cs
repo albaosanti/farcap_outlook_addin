@@ -252,6 +252,7 @@ namespace DragDrapWatcher_AddIn
       var name_idx = 0;
       var rulename = string.Empty;
       var stopWatch = System.Diagnostics.Stopwatch.StartNew();
+      string loggerPrefix = $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} ::";
 
       if (scanned_senders != null)
       {
@@ -267,14 +268,14 @@ namespace DragDrapWatcher_AddIn
               this.Refresh();
 
               //CLEAR RULE GROUP
-              Globals.ThisAddIn.Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Clearing {rulename_prefix}");
+              Globals.ThisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  Clearing {rulename_prefix}");
               Globals.ThisAddIn.OutlookRules.ClearRuleGroups(rulename_prefix);
 
               for (var i = 0; i < scanned_senders.Count; i++)
               {
                 //REMOVE EMAIL ADDRESS IN ANY OTHER RULE
                 var scannedSender = scanned_senders[i];
-                Globals.ThisAddIn.Error_Sender.WriteLog($"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} :: Processing for {scannedSender.sender.sender_email}");
+                Globals.ThisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  Processing for {scannedSender.sender.sender_email}");
                 var match_email = Globals.ThisAddIn.OutlookRules.FarCapRuleSenders.Where(
                     item => item.sender_email.Equals(scannedSender.sender.sender_email, StringComparison.OrdinalIgnoreCase) &&
                       !item.rulename.StartsWith(rulename_prefix, StringComparison.OrdinalIgnoreCase)).ToList();
