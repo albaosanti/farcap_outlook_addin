@@ -133,7 +133,7 @@ namespace DragDrapWatcher_AddIn
     {
       Outlook.Table items;
       Outlook.NameSpace ns;
-
+      string loggerPrefix = $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} ::";
       var stopWatch = System.Diagnostics.Stopwatch.StartNew();
       var uniqueEmails = new HashSet<string>();
       var progress = 0;
@@ -165,27 +165,34 @@ namespace DragDrapWatcher_AddIn
           var name = (string)mailItem["SenderName"];
           var senderType = (string)mailItem["SenderEmailType"];
           var emailAddress = (string)mailItem["SenderEmailAddress"];
-          
-          if (senderType.Equals("EX", StringComparison.OrdinalIgnoreCase) && 
-            !Globals.ThisAddIn.Error_Sender.IsValidEmailAdd(emailAddress))
-          {
-            var mail_ = (Outlook.MailItem) ns.GetItemFromID(entryid);
-            if (mail_ != null)
-               emailAddress = Globals.ThisAddIn.fnGetSenderAddress(mail_.Sender);           
-          }
 
-          if (!string.IsNullOrEmpty(emailAddress))
+          try
           {
-            emailAddress = emailAddress.ToLower();
-            var senderdata = new FarCapSender("", emailAddress, name, "");
-
-            if (uniqueEmails.Add(emailAddress))
-              scanned_senders.Add(new GroupSender(senderdata, 1));
-            else
+            if (senderType.Equals("EX", StringComparison.OrdinalIgnoreCase) &&
+                !Globals.ThisAddIn.Error_Sender.IsValidEmailAdd(emailAddress))
             {
-              var idx = scanned_senders.FindIndex(itm => itm.sender.sender_email.Equals(emailAddress, StringComparison.OrdinalIgnoreCase));
-              if (idx > -1) scanned_senders[idx].count++;
+              var mail_ = (Outlook.MailItem)ns.GetItemFromID(entryid);
+              if (mail_ != null)
+                emailAddress = Globals.ThisAddIn.fnGetSenderAddress(mail_.Sender);
             }
+
+            if (string.IsNullOrEmpty(emailAddress)) continue;
+          }
+          catch (Exception exception)
+          {
+            Globals.ThisAddIn.Error_Sender.WriteLog($"{loggerPrefix} Exception when scanning emails : {exception.Message} {exception.StackTrace}");
+            continue;
+          }
+          
+          emailAddress = emailAddress.ToLower();
+          var senderdata = new FarCapSender("", emailAddress, name, "");
+
+          if (uniqueEmails.Add(emailAddress))
+            scanned_senders.Add(new GroupSender(senderdata, 1));
+          else
+          {
+            var idx = scanned_senders.FindIndex(itm => itm.sender.sender_email.Equals(emailAddress, StringComparison.OrdinalIgnoreCase));
+            if (idx > -1) scanned_senders[idx].count++;
           }
         }
 
@@ -260,7 +267,7 @@ namespace DragDrapWatcher_AddIn
         return;
       }
 
-      if (MessageBox.Show("Existing sender/s on this rule will be replace with " + scanned_senders.Count.ToString() + " unique sender/s.\n\nDo you want to continue???", "Confirm - FarCap Add-In",
+      if (MessageBox.Show("Existing sender/s on this rule will be replace with " + scanned_senders.Count.ToString() + " unique sender/s.\n\nDo you want to continue?", "Confirm - FarCap Add-In",
         MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == System.Windows.Forms.DialogResult.Yes)
       {
         try

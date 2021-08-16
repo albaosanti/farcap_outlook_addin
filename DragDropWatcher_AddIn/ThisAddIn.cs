@@ -33,7 +33,7 @@ namespace DragDrapWatcher_AddIn
             var stopwatch = Stopwatch.StartNew();
             Error_Sender.WriteLog(string.Empty,
               $"{loggerPrefix}  Start Scanning folder :: Name: {folder.Name}");
-            if (folder.Name.StartsWith("Vault", StringComparison.InvariantCultureIgnoreCase) ||
+            if (folder.Name.Contains("Vault") ||
                 folder.Name.StartsWith("Public Folder", StringComparison.InvariantCultureIgnoreCase))
             {
               stopwatch.Stop();

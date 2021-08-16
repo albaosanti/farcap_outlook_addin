@@ -29,20 +29,20 @@ namespace DragDrapWatcher_AddIn
         foreach (Folder tmpFolder in _wrappedFolder.Folders)
         {
           Globals.ThisAddIn.Error_Sender.WriteLog(string.Empty,
-            $"{loggerPrefix}  Start Scanning folder :: Name: {folder.Name}");
-          if (folder.Name.StartsWith("Vault", StringComparison.InvariantCultureIgnoreCase) ||
-              folder.Name.StartsWith("Public Folder", StringComparison.InvariantCultureIgnoreCase))
+            $"{loggerPrefix}  Start Scanning folder :: Name: {tmpFolder.Name}");
+          if (tmpFolder.Name.Contains("Vault") ||
+              tmpFolder.Name.StartsWith("Public Folder", StringComparison.InvariantCultureIgnoreCase))
           {
             Globals.ThisAddIn.Error_Sender.WriteLog(string.Empty,
-              $"{loggerPrefix}  Skip Scanning folder :: Name: {folder.Name}");
+              $"{loggerPrefix}  Skip Scanning folder :: Name: {tmpFolder.Name}");
             continue;
           }
 
 
-          if (folder.DefaultItemType != OlItemType.olMailItem)
+          if (tmpFolder.DefaultItemType != OlItemType.olMailItem)
           {
             Globals.ThisAddIn.Error_Sender.WriteLog(string.Empty,
-              $"{loggerPrefix}  Skip Scanning folder :: Name: {folder.Name}, as its not a OlItemType.olMailItem type");
+              $"{loggerPrefix}  Skip Scanning folder :: Name: {tmpFolder.Name}, as its not a OlItemType.olMailItem type");
             continue;
           }
 
@@ -51,7 +51,7 @@ namespace DragDrapWatcher_AddIn
           wrappedSubFolders.AddRange(tmpWrapFolder.wrappedSubFolders);
 
           Globals.ThisAddIn.Error_Sender.WriteLog(string.Empty,
-            $"{loggerPrefix}  End Scanning folder :: Name: {folder.Name}");
+            $"{loggerPrefix}  End Scanning folder :: Name: {tmpFolder.Name}");
         }
       }
       catch (System.Exception ex)
