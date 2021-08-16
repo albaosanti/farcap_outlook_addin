@@ -1,14 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
 using System.Windows.Forms;
-
-using Outlook = Microsoft.Office.Interop.Outlook;
 using Office = Microsoft.Office.Core;
 
 namespace DragDrapWatcher_AddIn
@@ -130,11 +125,13 @@ namespace DragDrapWatcher_AddIn
 
     private void btnDelete_Click(object sender, EventArgs e)
     {
+      string loggerPrefix = $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} ::";
       DataGridViewSelectedRowCollection selected_rows = dgvList.SelectedRows;
       if (selected_rows.Count > 0)
       {
         if (MessageBox.Show("Are you sure to DELETE the selected account [" + dgvList.SelectedRows.Count + "] on watch list?", "Confirm Delete - FarCap Outlook Add-In", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == System.Windows.Forms.DialogResult.Yes)
         {
+          Globals.ThisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  User Confirmed deletion!");
           try
           {
             int remove_count = 0;

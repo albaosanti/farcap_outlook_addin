@@ -14,6 +14,7 @@ namespace DragDrapWatcher_AddIn
 
     internal SuperMailFolder(Folder folder, string profileName)
     {
+      string loggerPrefix = $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} ::";
       try
       {
         //assign it to local private master
@@ -27,15 +28,30 @@ namespace DragDrapWatcher_AddIn
         //Go through all the subfolders and wrap them as well
         foreach (Folder tmpFolder in _wrappedFolder.Folders)
         {
+          Globals.ThisAddIn.Error_Sender.WriteLog(string.Empty,
+            $"{loggerPrefix}  Start Scanning folder :: Name: {folder.Name}");
           if (folder.Name.StartsWith("Vault", StringComparison.InvariantCultureIgnoreCase) ||
               folder.Name.StartsWith("Public Folder", StringComparison.InvariantCultureIgnoreCase))
+          {
+            Globals.ThisAddIn.Error_Sender.WriteLog(string.Empty,
+              $"{loggerPrefix}  Skip Scanning folder :: Name: {folder.Name}");
             continue;
+          }
 
-          if (folder.DefaultItemType != OlItemType.olMailItem) continue;
+
+          if (folder.DefaultItemType != OlItemType.olMailItem)
+          {
+            Globals.ThisAddIn.Error_Sender.WriteLog(string.Empty,
+              $"{loggerPrefix}  Skip Scanning folder :: Name: {folder.Name}, as its not a OlItemType.olMailItem type");
+            continue;
+          }
 
           var tmpWrapFolder = new SuperMailFolder(tmpFolder, _profileName);
           wrappedSubFolders.Add(tmpWrapFolder);
           wrappedSubFolders.AddRange(tmpWrapFolder.wrappedSubFolders);
+
+          Globals.ThisAddIn.Error_Sender.WriteLog(string.Empty,
+            $"{loggerPrefix}  End Scanning folder :: Name: {folder.Name}");
         }
       }
       catch (System.Exception ex)
@@ -103,7 +119,7 @@ namespace DragDrapWatcher_AddIn
             if (TargetFolder.Name.StartsWith(folder_prefix, StringComparison.OrdinalIgnoreCase))
             {
               target_ruleprefix = rule_prefix + TargetFolder.Name;
-              Globals.ThisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  Adding {sender_address} to {target_ruleprefix} on {TargetFolder.Name}!");
+              Globals.ThisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  Adding {sender_address} to target_ruleprefix : {target_ruleprefix} on TargetFolder:{TargetFolder.Name}!");
               ok_added = Globals.ThisAddIn.OutlookRules.AddEmailToRule(target_ruleprefix, sender_address, oMsg.SenderName, TargetFolder);
             }
             else
@@ -117,6 +133,10 @@ namespace DragDrapWatcher_AddIn
             if (Globals.ThisAddIn.OutlookRules != null && (ok_added || ok_removed))
               Globals.ThisAddIn.OutlookRules.Save(true);
           }
+        }
+        else
+        {
+          Globals.ThisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  Drag and drop skipped as, Item is MailItem : {Item is MailItem} or TargetFolder NULL is {TargetFolder != null}");
         }
       }
       catch (System.Exception ex)
@@ -137,8 +157,11 @@ namespace DragDrapWatcher_AddIn
 
     void Items_ItemAdd(object Item)
     {
+      string loggerPrefix = $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} ::";
       try
       {
+        Globals.ThisAddIn.Error_Sender.WriteLog(string.Empty,
+          $"{loggerPrefix}  Triggered");
         if (Item is Folder item)
         {
           SuperMailFolder tmpWrapFolder = new SuperMailFolder(item, _profileName);

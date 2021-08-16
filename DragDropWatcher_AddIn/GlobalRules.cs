@@ -20,40 +20,23 @@ namespace DragDrapWatcher_AddIn
       this.Reload();
     }
 
-    public List<string> GetGroupRuleNames(string rulename_prefix)
-    {
-      List<string> rule_names = new List<string>();
-      if (FarCapRuleSenders != null)
-      {
-        var list = FarCapRuleSenders.Where(row =>
-            row.rulename.StartsWith(rulename_prefix, StringComparison.OrdinalIgnoreCase))
-          .GroupBy(g => new { g.rulename })
-          .Select(s => new { Name = s.Key.rulename, Count = s.Count() }).ToList();
-
-        if (list != null)
-        {
-          foreach (var item in list)
-            rule_names.Add(item.Name);
-        }
-      }
-      return rule_names;
-    }
-
     public void ClearRuleGroups(string rulename_prefix)
     {
-      if (FarCapRuleSenders != null)
+      string loggerPrefix = $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} ::";
+      _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  called with rulename_prefix-> {rulename_prefix}");
+      if (FarCapRuleSenders == null)
       {
-        var list = FarCapRuleSenders.Where(row =>
-            row.rulename.StartsWith(rulename_prefix, StringComparison.OrdinalIgnoreCase))
-          .GroupBy(g => new { g.rulename })
-          .Select(s => new { Name = s.Key.rulename, Count = s.Count() }).ToList();
-
-        if (list != null)
-        {
-          foreach (var item in list)
-            this.Remove(item.Name);
-        }
+        _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  NUll FarCapRuleSenders -> {FarCapRuleSenders == null} or NULL Rules {Rules == null} !");
+        return;
       }
+
+      var list = FarCapRuleSenders.Where(row =>
+          row.rulename.StartsWith(rulename_prefix, StringComparison.OrdinalIgnoreCase))
+        .GroupBy(g => new { g.rulename })
+        .Select(s => new { Name = s.Key.rulename, Count = s.Count() }).ToList();
+
+      foreach (var item in list)
+        this.Remove(item.Name);
     }
 
     private string GetTargetRulenameGroup(string rulename_prefix)
@@ -169,8 +152,13 @@ namespace DragDrapWatcher_AddIn
       string recipient_address;
       bool ok_remove = false;
       Microsoft.Office.Interop.Outlook.Rule src_rule = null;
+      string loggerPrefix = $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} ::";
 
-      if (FarCapRuleSenders == null || Rules == null) Reload();
+      if (FarCapRuleSenders == null || Rules == null)
+      {
+        _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  NUll FarCapRuleSenders -> {FarCapRuleSenders == null} or NULL Rules {Rules == null} !");
+        Reload();
+      }
 
       if (FarCapRuleSenders.Exists(row => row.rulename.Equals(rule_name, StringComparison.OrdinalIgnoreCase)
                                           && row.sender_email.Equals(email_address, StringComparison.OrdinalIgnoreCase)))
@@ -210,11 +198,15 @@ namespace DragDrapWatcher_AddIn
 
     public Microsoft.Office.Interop.Outlook.Rule Create(string tarRulename, Microsoft.Office.Interop.Outlook.OlRuleType olRuleReceive)
     {
+      string loggerPrefix = $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} ::";
+      _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  called with tarRulename-> {tarRulename}");
       return Rules.Create(tarRulename, Microsoft.Office.Interop.Outlook.OlRuleType.olRuleReceive);
     }
 
     public void Remove(string srcRulename)
     {
+      string loggerPrefix = $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} ::";
+      _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  called with srcRulename-> {srcRulename}");
       Rules.Remove(srcRulename);
       FarCapRuleSenders.RemoveAll(
         row => row.rulename.Equals(srcRulename,
@@ -223,6 +215,8 @@ namespace DragDrapWatcher_AddIn
 
     public void Save(bool b)
     {
+      string loggerPrefix = $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} ::";
+      _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  called with b-> {b}");
       Rules.Save(b);
       Reload();
     }
@@ -245,8 +239,8 @@ namespace DragDrapWatcher_AddIn
         if (!rule.Name.Trim()
           .StartsWith(Properties.Settings.Default.RuleName_Prefix, StringComparison.OrdinalIgnoreCase)) continue;
 
-        _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix} Scanning rule {rule.Name}");
-        
+        _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix} Scanning rule {rule.Name} & it has {rule.Conditions.From.Recipients.Count} Recipients");
+
         foreach (Microsoft.Office.Interop.Outlook.Recipient _recipient in rule.Conditions.From.Recipients)
         {
           string fnGetSenderAddress = string.Empty, recipientName = string.Empty, folderName = string.Empty;

@@ -1,11 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
 using System.Windows.Forms;
 
 using Outlook = Microsoft.Office.Interop.Outlook;
@@ -119,6 +114,8 @@ namespace DragDrapWatcher_AddIn
       string folder_path = string.Empty;
       string tar_rulename = string.Empty;
       bool has_changed = false;
+      string loggerPrefix = $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} ::";
+      Globals.ThisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  Triggered");
 
       if (cmbTarget.SelectedIndex > -1)
       {

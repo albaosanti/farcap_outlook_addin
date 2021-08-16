@@ -254,79 +254,82 @@ namespace DragDrapWatcher_AddIn
       var stopWatch = System.Diagnostics.Stopwatch.StartNew();
       string loggerPrefix = $"{this.GetType().Name}->{MethodBase.GetCurrentMethod().Name} ::";
 
-      if (scanned_senders != null)
+      if (scanned_senders == null || scanned_senders.Count <= 0)
       {
-        if (scanned_senders.Count > 0)
+        Globals.ThisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  scanned_senders == null : {scanned_senders == null} or scanned_senders.Count <= 0");
+        return;
+      }
+
+      if (MessageBox.Show("Existing sender/s on this rule will be replace with " + scanned_senders.Count.ToString() + " unique sender/s.\n\nDo you want to continue???", "Confirm - FarCap Add-In",
+        MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == System.Windows.Forms.DialogResult.Yes)
+      {
+        try
         {
-          if (MessageBox.Show("Existing sender/s on this rule will be replace with " + scanned_senders.Count.ToString() + " unique sender/s.\n\nDo you want to continue???", "Confirm - FarCap Add-In",
-              MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == System.Windows.Forms.DialogResult.Yes)
+          lblStatus.Text = "Saving rule..."; 
+          lblFoundSenders.Text = "Saving rule...";
+          this.Refresh();
+
+          //CLEAR RULE GROUP
+          Globals.ThisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  Clearing {rulename_prefix}");
+          Globals.ThisAddIn.OutlookRules.ClearRuleGroups(rulename_prefix);
+
+          for (var i = 0; i < scanned_senders.Count; i++)
           {
-            try
-            {
-              lblStatus.Text = "Saving rule..."; 
-              lblFoundSenders.Text = "Saving rule...";
-              this.Refresh();
-
-              //CLEAR RULE GROUP
-              Globals.ThisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  Clearing {rulename_prefix}");
-              Globals.ThisAddIn.OutlookRules.ClearRuleGroups(rulename_prefix);
-
-              for (var i = 0; i < scanned_senders.Count; i++)
-              {
-                //REMOVE EMAIL ADDRESS IN ANY OTHER RULE
-                var scannedSender = scanned_senders[i];
-                Globals.ThisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  Processing for {scannedSender.sender.sender_email}");
-                var match_email = Globals.ThisAddIn.OutlookRules.FarCapRuleSenders.Where(
-                    item => item.sender_email.Equals(scannedSender.sender.sender_email, StringComparison.OrdinalIgnoreCase) &&
+            //REMOVE EMAIL ADDRESS IN ANY OTHER RULE
+            var scannedSender = scanned_senders[i];
+            Globals.ThisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  Processing for {scannedSender.sender.sender_email}");
+            var match_email = Globals.ThisAddIn.OutlookRules.FarCapRuleSenders.Where(
+              item => item.sender_email.Equals(scannedSender.sender.sender_email, StringComparison.OrdinalIgnoreCase) &&
                       !item.rulename.StartsWith(rulename_prefix, StringComparison.OrdinalIgnoreCase)).ToList();
 
-                if (match_email!=null)
-                {
-                  foreach (var existing_sender in match_email)
-                    Globals.ThisAddIn.OutlookRules.RemoveEmailFromRule(existing_sender.rulename, existing_sender.sender_email);
-                }
-
-                //RULE GROUP NAMING
-                if ((i % Properties.Settings.Default.MaxRuleRecipients) == 0)
-                {
-                  name_idx++;
-                  rulename = rulename_prefix + "_" + name_idx;
-                  rule = Globals.ThisAddIn.OutlookRules.Create(rulename, Outlook.OlRuleType.olRuleReceive);
-                  rule.Actions.MoveToFolder.Folder = (parent_folder);
-                  rule.Actions.MoveToFolder.Enabled = true;
-                }
-                
-                if (rule != null)
-                {
-                  rule.Conditions.From.Recipients.Add(scannedSender.sender.sender_email);
-                  rule.Conditions.From.Recipients.ResolveAll();
-                  rule.Conditions.From.Enabled = true;
-
-                  Globals.ThisAddIn.OutlookRules.FarCapRuleSenders.Add(new FarCapSender(rulename,
-                    scannedSender.sender.sender_email,
-                    scannedSender.sender.sender_name,
-                    parent_folder.Name));
-                }
-              }
-              //SAVE                            
-              Globals.ThisAddIn.OutlookRules.Save(true);
-              stopWatch.Stop();
-
-              lblFoundSenders.Text = "Rule was updated!";
-              lblRuleSenders.Text = $"{scanned_senders.Count} unique sender {(scanned_senders.Count > 1 ? "s" : "")}.";
-              lblStatus.Text = $"Saving rule took: {stopWatch.ElapsedMilliseconds} ms.";
-
-              scanned_senders = null;
-              btnSave.Enabled = false;
-
-              MessageBox.Show("Done!","FarCap Add-In",MessageBoxButtons.OK,MessageBoxIcon.Information);
+            foreach (var existing_sender in match_email)
+            {
+              Globals.ThisAddIn.Error_Sender.WriteLog(
+                $"{loggerPrefix}  Removing {existing_sender.sender_email} from {existing_sender.rulename}");
+              Globals.ThisAddIn.OutlookRules.RemoveEmailFromRule(existing_sender.rulename,
+                existing_sender.sender_email);
             }
-            catch (Exception ex)
-            { 
-              Globals.ThisAddIn.Error_Sender.SendNotification("@btnSave >> " + ex.Message + ex.StackTrace);
-              lblStatus.Text = "Error saving rule.";
+
+            //RULE GROUP NAMING
+            if ((i % Properties.Settings.Default.MaxRuleRecipients) == 0)
+            {
+              name_idx++;
+              rulename = rulename_prefix + "_" + name_idx;
+              rule = Globals.ThisAddIn.OutlookRules.Create(rulename, Outlook.OlRuleType.olRuleReceive);
+              rule.Actions.MoveToFolder.Folder = (parent_folder);
+              rule.Actions.MoveToFolder.Enabled = true;
+            }
+                
+            if (rule != null)
+            {
+              rule.Conditions.From.Recipients.Add(scannedSender.sender.sender_email);
+              rule.Conditions.From.Recipients.ResolveAll();
+              rule.Conditions.From.Enabled = true;
+
+              Globals.ThisAddIn.OutlookRules.FarCapRuleSenders.Add(new FarCapSender(rulename,
+                scannedSender.sender.sender_email,
+                scannedSender.sender.sender_name,
+                parent_folder.Name));
             }
           }
+          //SAVE                            
+          Globals.ThisAddIn.OutlookRules.Save(true);
+          stopWatch.Stop();
+
+          lblFoundSenders.Text = "Rule was updated!";
+          lblRuleSenders.Text = $"{scanned_senders.Count} unique sender {(scanned_senders.Count > 1 ? "s" : "")}.";
+          lblStatus.Text = $"Saving rule took: {stopWatch.ElapsedMilliseconds} ms.";
+          Globals.ThisAddIn.Error_Sender.WriteLog(
+            $"{loggerPrefix} Saving rule took: {stopWatch.ElapsedMilliseconds} ms.");
+          scanned_senders = null;
+          btnSave.Enabled = false;
+
+          MessageBox.Show("Done!","FarCap Add-In",MessageBoxButtons.OK,MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        { 
+          Globals.ThisAddIn.Error_Sender.SendNotification("@btnSave >> " + ex.Message + ex.StackTrace);
+          lblStatus.Text = "Error saving rule.";
         }
       }
     }
