@@ -169,19 +169,19 @@ namespace DragDrapWatcher_AddIn
           foreach (Microsoft.Office.Interop.Outlook.Recipient _recipient in src_rule.Conditions.From.Recipients)
           {
             recipient_address = _thisAddIn.fnGetSenderAddress(_recipient);
-            if (!string.IsNullOrEmpty(recipient_address))
-            {
-              if (recipient_address.Equals(email_address, StringComparison.OrdinalIgnoreCase))
-              {
-                _recipient.Delete();
-                _recipient.Resolve();
-                ok_remove = true;
-                break;
-              }
-            }
+            if (string.IsNullOrEmpty(recipient_address)) continue;
+            if (!recipient_address.Equals(email_address, StringComparison.OrdinalIgnoreCase)) continue;
+
+            _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  Removing -> {recipient_address} from {src_rule.Name} !");
+            _recipient.Delete();
+            _recipient.Resolve();
+            ok_remove = true;
+            break;
           }
+
           if (src_rule.Conditions.From.Recipients.Count == 0)
           {
+            _thisAddIn.Error_Sender.WriteLog($"{loggerPrefix}  Removing rule {src_rule.Name} as it has no recipient");
             this.Rules.Remove(rule_name);
             ok_remove = true;
           }
